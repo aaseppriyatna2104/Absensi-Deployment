@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recharge Absensi</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    /* =========================================================
+       VARIABLES & DARK MODE
+       ========================================================= */
+    :root {
+      --color-primary: #1F7A64;
+      --color-primary-light: #2E9678;
+      --color-primary-dark: #165A4A;
+      --color-teal: #2E9678;
+      --color-amber: #E8A33D;
+      --color-red: #D9534F;
+      --color-blue: #3B82F6;
+
+      --bg-page: #F4F6FA;
+      --bg-surface: #FFFFFF;
+      --bg-sidebar: #0F1A1F;
+      --bg-card: #FFFFFF;
+      --bg-input: #F1F3F7;
+
+      --text-primary: #1A1D24;
+      --text-secondary: #4B5563;
+      --text-muted: #9CA3AF;
+      --text-inverse: #F9FAFB;
+      --text-sidebar: #CBD5E1;
+
+      --border-color: #E5E7EB;
+      --border-focus: var(--color-primary-light);
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+
+      --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px;  --sp-4: 16px;
+      --sp-5: 20px; --sp-6: 24px; --sp-8: 32px;  --sp-10: 40px;
+
+      --font-sans: 'Inter', sans-serif;
+      --font-display: 'Sora', var(--font-sans);
+      --font-mono: 'JetBrains Mono', monospace;
+
+      --transition-fast: 150ms ease;
+      --transition-base: 250ms ease;
+      --transition-slow: 400ms ease;
+
+      --sidebar-width: 260px;
+      --z-dropdown: 100; --z-modal: 200; --z-toast: 300; --z-sidebar: 400; --z-loader: 500;
+    }
+
+    [data-theme="dark"] {
+      --bg-page: #0B1217;
+      --bg-surface: #162028;
+      --bg-sidebar: #0A0F13;
+      --bg-card: #1A2630;
+      --bg-input: #1F2B36;
+      --text-primary: #F1F5F9;
+      --text-secondary: #CBD5E1;
+      --text-muted: #64748B;
+      --text-sidebar: #94A3B8;
+      --border-color: #2D3A45;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 8px 30px rgba(0,0,0,0.5);
+      --color-primary: #3AB795;
+      --color-primary-light: #4ECBA8;
+      --color-primary-dark: #2E9678;
+    }
+
+    /* =========================================================
+       BASE
+       ========================================================= */
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { font-size:16px; scroll-behavior:smooth; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-page);
+      color: var(--text-primary);
+      line-height:1.6;
+      transition: background var(--transition-base), color var(--transition-base);
+      min-height:100vh;
+    }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:var(--bg-page); }
+    ::-webkit-scrollbar-thumb { background:var(--color-primary-light); border-radius:3px; }
+    h1,h2,h3,h4,h5,h6 { font-family:var(--font-display); font-weight:600; line-height:1.25; color:var(--text-primary); }
+    h1 { font-size:1.75rem; } h2 { font-size:1.25rem; } h3 { font-size:1.05rem; }
+    a { color:var(--color-primary-light); text-decoration:none; }
+    a:hover { color:var(--color-primary); }
+    button { font:inherit; cursor:pointer; border:none; background:none; color:inherit; }
+    input, select, textarea { font:inherit; color:inherit; border:none; background:none; outline:none; }
+    .mono { font-family:var(--font-mono); letter-spacing:-0.02em; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); }
+
+    /* =========================================================
+       LOADER & TOAST
+       ========================================================= */
+    #app-loader {
+      position:fixed; inset:0; z-index:var(--z-loader);
+      background:var(--bg-page);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      transition: opacity var(--transition-slow), visibility var(--transition-slow);
+    }
+    #app-loader.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+    .spinner {
+      width:48px; height:48px;
+      border:4px solid var(--border-color);
+      border-top-color:var(--color-primary-light);
+      border-radius:50%;
+      animation:spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .loader-text { margin-top:var(--sp-4); font-size:0.9rem; color:var(--text-muted); animation:pulse-text 1.5s ease-in-out infinite; }
+    @keyframes pulse-text { 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+
+    #toast-container {
+      position:fixed; bottom:var(--sp-6); right:var(--sp-6);
+      z-index:var(--z-toast);
+      display:flex; flex-direction:column; gap:var(--sp-2);
+      max-width:380px; width:100%; pointer-events:none;
+    }
+    .toast {
+      pointer-events:auto;
+      background:var(--bg-surface); color:var(--text-primary);
+      padding:var(--sp-4) var(--sp-5);
+      border-radius:var(--radius-md);
+      box-shadow:var(--shadow-lg);
+      border-left:4px solid var(--color-primary-light);
+      display:flex; align-items:center; gap:var(--sp-3);
+      transform:translateX(calc(100% + 20px));
+      opacity:0;
+      animation:slide-in-toast var(--transition-slow) forwards;
+      border:1px solid var(--border-color);
+    }
+    .toast--success { border-left-color:var(--color-teal); }
+    .toast--error { border-left-color:var(--color-red); }
+    .toast--warning { border-left-color:var(--color-amber); }
+    .toast--info { border-left-color:var(--color-blue); }
+    .toast__icon { font-size:1.2rem; flex-shrink:0; }
+    .toast__body { flex:1; font-size:0.9rem; }
+    .toast__close {
+      flex-shrink:0; width:24px; height:24px; border-radius:50%;
+      background:var(--bg-input); display:flex; align-items:center; justify-content:center;
+      font-size:14px; cursor:pointer; transition:var(--transition-fast);
+      color:var(--text-muted);
+    }
+    .toast__close:hover { background:var(--border-color); color:var(--text-primary); }
+    @keyframes slide-in-toast {
+      0% { transform:translateX(calc(100% + 20px)); opacity:0; }
+      100% { transform:translateX(0); opacity:1; }
+    }
+    .toast-removing { animation:slide-out-toast var(--transition-base) forwards !important; }
+    @keyframes slide-out-toast {
+      0% { transform:translateX(0); opacity:1; }
+      100% { transform:translateX(calc(100% + 20px)); opacity:0; }
+    }
+
+    /* =========================================================
+       LAYOUT
+       ========================================================= */
+    .app-shell { display:flex; min-height:100vh; }
+    .sidebar {
+      position:fixed; top:0; left:0; bottom:0;
+      width:var(--sidebar-width);
+      background:var(--bg-sidebar); color:var(--text-sidebar);
+      padding:var(--sp-5) var(--sp-4);
+      display:flex; flex-direction:column;
+      z-index:var(--z-sidebar);
+      transform:translateX(-100%);
+      transition:transform var(--transition-base);
+      overflow-y:auto;
+      border-right:1px solid rgba(255,255,255,0.05);
+    }
+    .sidebar--open { transform:translateX(0); }
+    .sidebar__close-btn { display:none; align-self:flex-end; padding:var(--sp-2); color:var(--text-sidebar); border-radius:var(--radius-sm); transition:var(--transition-fast); }
+    .sidebar__close-btn:hover { background:rgba(255,255,255,0.05); }
+    .sidebar__brand { display:flex; align-items:center; gap:var(--sp-3); padding:var(--sp-2) 0 var(--sp-5); border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:var(--sp-5); }
+    .sidebar__brand-mark { width:40px; height:40px; border-radius:var(--radius-md); background:var(--color-primary-light); color:#fff; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:1.1rem; flex-shrink:0; }
+    .sidebar__brand-text { display:flex; flex-direction:column; }
+    .sidebar__brand-name { font-weight:600; font-size:0.95rem; color:#fff; }
+    .sidebar__brand-sub { font-size:0.7rem; color:var(--text-muted); letter-spacing:0.02em; }
+    .sidebar__section-label { font-size:0.65rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); padding:var(--sp-3) 0 var(--sp-2); }
+    .nav-menu { display:flex; flex-direction:column; gap:2px; flex:1; }
+    .nav-menu__item {
+      display:flex; align-items:center; gap:var(--sp-3);
+      padding:var(--sp-3) var(--sp-4);
+      border-radius:var(--radius-md);
+      font-size:0.9rem; font-weight:500;
+      color:var(--text-sidebar);
+      transition:var(--transition-fast);
+      position:relative;
+      cursor:pointer;
+    }
+    .nav-menu__item svg { width:20px; height:20px; flex-shrink:0; }
+    .nav-menu__item:hover { background:rgba(255,255,255,0.06); color:#fff; }
+    .nav-menu__item.is-active { background:rgba(46,150,120,0.2); color:var(--color-primary-light); }
+    .nav-menu__item.is-active::before {
+      content:''; position:absolute; left:0; top:8px; bottom:8px;
+      width:3px; background:var(--color-primary-light); border-radius:0 3px 3px 0;
+    }
+    .sidebar__footer { margin-top:auto; padding-top:var(--sp-4); border-top:1px solid rgba(255,255,255,0.06); }
+    .sidebar__user { display:flex; align-items:center; gap:var(--sp-3); }
+    .sidebar__avatar { width:36px; height:36px; border-radius:50%; background:var(--color-primary-dark); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:0.8rem; flex-shrink:0; }
+    .sidebar__user-name { font-size:0.85rem; font-weight:500; color:#fff; }
+    .sidebar__user-role { font-size:0.7rem; color:var(--text-muted); }
+
+    .sidebar-backdrop {
+      position:fixed; inset:0; background:rgba(0,0,0,0.4);
+      z-index:calc(var(--z-sidebar) - 1);
+      opacity:0; visibility:hidden;
+      transition:var(--transition-base);
+    }
+    .sidebar-backdrop--visible { opacity:1; visibility:visible; }
+
+    .main-col {
+      flex:1; margin-left:0;
+      display:flex; flex-direction:column;
+      min-height:100vh;
+      transition:margin-left var(--transition-base);
+      width:100%;
+    }
+
+    .mobile-topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:var(--sp-3) var(--sp-4);
+      background:var(--bg-surface);
+      border-bottom:1px solid var(--border-color);
+      position:sticky; top:0; z-index:10;
+    }
+    .mobile-topbar__menu-btn { padding:var(--sp-2); border-radius:var(--radius-sm); transition:var(--transition-fast); color:var(--text-secondary); }
+    .mobile-topbar__menu-btn:hover { background:var(--bg-input); }
+    .mobile-topbar__brand { font-family:var(--font-display); font-weight:600; font-size:1rem; color:var(--text-primary); }
+
+    .topbar {
+      display:none;
+      align-items:center; justify-content:space-between;
+      padding:var(--sp-4) var(--sp-6);
+      background:var(--bg-surface);
+      border-bottom:1px solid var(--border-color);
+      flex-shrink:0;
+    }
+    .topbar__title-group h1 { font-size:1.4rem; }
+    .topbar__breadcrumb { font-size:0.8rem; color:var(--text-muted); }
+    .topbar__right { display:flex; align-items:center; gap:var(--sp-4); }
+    .punch-clock {
+      display:flex; align-items:center; gap:var(--sp-2);
+      background:var(--bg-input); padding:var(--sp-1) var(--sp-3);
+      border-radius:var(--radius-xl); font-size:0.8rem;
+    }
+    .punch-clock__dot { width:8px; height:8px; border-radius:50%; background:var(--color-teal); animation:pulse-dot 2s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:0.4; transform:scale(0.8); } }
+    .punch-clock__time { font-family:var(--font-mono); font-weight:500; }
+    .punch-clock__date { font-size:0.7rem; color:var(--text-muted); }
+    .topbar__icon-btn { padding:var(--sp-2); border-radius:50%; transition:var(--transition-fast); color:var(--text-secondary); position:relative; }
+    .topbar__icon-btn:hover { background:var(--bg-input); }
+
+    .content { flex:1; padding:var(--sp-4); max-width:1280px; width:100%; margin:0 auto; }
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+    @media (min-width:768px) {
+      .mobile-topbar { display:none; }
+      .topbar { display:flex; }
+      .sidebar { transform:translateX(0); position:sticky; top:0; height:100vh; }
+      .sidebar__close-btn { display:none !important; }
+      .sidebar-backdrop { display:none !important; }
+      .main-col { margin-left:var(--sidebar-width); }
+      .content { padding:var(--sp-6); }
+    }
+    @media (min-width:1024px) { .content { padding:var(--sp-8); } }
+
+    /* =========================================================
+       COMPONENTS
+       ========================================================= */
+    .panel {
+      background:var(--bg-surface);
+      border-radius:var(--radius-lg);
+      border:1px solid var(--border-color);
+      padding:var(--sp-5);
+      box-shadow:var(--shadow-sm);
+      transition: background var(--transition-base), border var(--transition-base), box-shadow var(--transition-base);
+      margin-bottom:var(--sp-5);
+    }
+    .panel:hover { box-shadow:var(--shadow-md); }
+    .panel__header { display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap; gap:var(--sp-3); margin-bottom:var(--sp-4); }
+    .panel__header-sub { font-size:0.8rem; color:var(--text-muted); margin-top:2px; }
+
+    .stat-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--sp-3); margin-bottom:var(--sp-5); }
+    @media (min-width:480px) { .stat-grid { grid-template-columns:repeat(4,1fr); gap:var(--sp-4); } }
+    .stat-card {
+      background:var(--bg-card);
+      border-radius:var(--radius-md);
+      padding:var(--sp-4);
+      border:1px solid var(--border-color);
+      transition:var(--transition-base);
+    }
+    .stat-card:hover { border-color:var(--color-primary-light); box-shadow:var(--shadow-md); }
+    .stat-card__top { display:flex; align-items:center; justify-content:space-between; margin-bottom:var(--sp-2); }
+    .stat-card__icon { width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .stat-card__icon svg { width:18px; height:18px; stroke:#fff; }
+    .stat-card__icon--teal { background:var(--color-teal); }
+    .stat-card__icon--amber { background:var(--color-amber); }
+    .stat-card__icon--red { background:var(--color-red); }
+    .stat-card__icon--blue { background:var(--color-blue); }
+    .stat-card__delta { font-size:0.7rem; font-weight:600; padding:2px 8px; border-radius:var(--radius-xl); }
+    .stat-card__delta--up { color:var(--color-teal); background:rgba(46,150,120,0.12); }
+    .stat-card__delta--down { color:var(--color-red); background:rgba(217,83,79,0.12); }
+    .stat-card__value { font-size:1.6rem; font-weight:700; font-family:var(--font-mono); letter-spacing:-0.02em; color:var(--text-primary); }
+    .stat-card__label { font-size:0.8rem; color:var(--text-muted); }
+
+    .status-badge {
+      display:inline-flex; align-items:center; padding:2px 12px;
+      border-radius:var(--radius-xl);
+      font-size:0.7rem; font-weight:600; text-transform:capitalize; letter-spacing:0.01em;
+      transition:var(--transition-fast);
+    }
+    .status-badge--hadir { background:rgba(46,150,120,0.15); color:var(--color-teal); }
+    .status-badge--telat { background:rgba(232,163,61,0.15); color:var(--color-amber); }
+    .status-badge--izin { background:rgba(59,130,246,0.15); color:var(--color-blue); }
+    .status-badge--alpha { background:rgba(217,83,79,0.15); color:var(--color-red); }
+
+    .btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:var(--sp-2);
+      padding:var(--sp-2) var(--sp-5);
+      border-radius:var(--radius-md);
+      font-weight:500; font-size:0.9rem;
+      transition:var(--transition-base);
+      border:1px solid transparent;
+    }
+    .btn--primary { background:var(--color-primary-light); color:#fff; }
+    .btn--primary:hover { background:var(--color-primary); transform:translateY(-1px); box-shadow:var(--shadow-md); }
+    .btn--primary:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+    .btn--outline { background:transparent; border-color:var(--border-color); color:var(--text-secondary); }
+    .btn--outline:hover { border-color:var(--color-primary-light); color:var(--color-primary-light); }
+    .btn--ghost { color:var(--text-muted); padding:var(--sp-1) var(--sp-3); font-size:0.8rem; }
+    .btn--ghost:hover { color:var(--text-primary); background:var(--bg-input); }
+    .btn--danger { background:var(--color-red); color:#fff; }
+    .btn--danger:hover { background:#c0392b; }
+    .btn--block { width:100%; justify-content:center; }
+
+    .form-group { display:flex; flex-direction:column; gap:var(--sp-1); margin-bottom:var(--sp-4); }
+    .form-group label { font-size:0.85rem; font-weight:500; color:var(--text-secondary); }
+    .form-group .input {
+      padding:var(--sp-3) var(--sp-4);
+      border-radius:var(--radius-md);
+      background:var(--bg-input);
+      border:1.5px solid transparent;
+      transition:var(--transition-base);
+      font-size:0.95rem;
+      width:100%;
+    }
+    .form-group .input:focus { border-color:var(--color-primary-light); background:var(--bg-surface); box-shadow:0 0 0 3px rgba(46,150,120,0.15); }
+    .form-group .input--error { border-color:var(--color-red); }
+    .form-group .input--error:focus { box-shadow:0 0 0 3px rgba(217,83,79,0.15); }
+    .form-group .helper-text { font-size:0.75rem; color:var(--text-muted); }
+    .form-group .helper-text--error { color:var(--color-red); }
+
+    .table-wrap { overflow-x:auto; border-radius:var(--radius-md); border:1px solid var(--border-color); }
+    table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+    table thead { background:var(--bg-input); }
+    table th { text-align:left; padding:var(--sp-3) var(--sp-4); font-weight:600; font-size:0.75rem; text-transform:uppercase; letter-spacing:0.04em; color:var(--text-muted); border-bottom:1px solid var(--border-color); }
+    table td { padding:var(--sp-3) var(--sp-4); border-bottom:1px solid var(--border-color); color:var(--text-secondary); }
+    table tbody tr:hover { background:var(--bg-input); }
+    table tbody tr:last-child td { border-bottom:none; }
+
+    .timeline { display:flex; flex-direction:column; gap:var(--sp-3); }
+    .timeline__item { display:flex; align-items:center; gap:var(--sp-3); padding:var(--sp-3); border-radius:var(--radius-md); background:var(--bg-input); transition:var(--transition-fast); }
+    .timeline__item:hover { background:var(--border-color); }
+    .timeline__time { font-size:0.7rem; font-weight:500; color:var(--text-muted); min-width:48px; flex-shrink:0; }
+    .timeline__avatar { width:32px; height:32px; border-radius:50%; background:var(--color-primary-dark); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:600; font-size:0.7rem; flex-shrink:0; }
+    .timeline__body { flex:1; min-width:0; }
+    .timeline__name { font-weight:500; font-size:0.85rem; color:var(--text-primary); }
+    .timeline__meta { font-size:0.75rem; color:var(--text-muted); }
+
+    .progress-list { display:flex; flex-direction:column; gap:var(--sp-4); }
+    .progress-row__top { display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:var(--sp-1); }
+    .progress-track { height:6px; background:var(--bg-input); border-radius:var(--radius-xl); overflow:hidden; }
+    .progress-fill { height:100%; background:var(--color-primary-light); border-radius:var(--radius-xl); transition:width var(--transition-slow); }
+
+    .filter-tabs { display:flex; gap:var(--sp-1); background:var(--bg-input); padding:4px; border-radius:var(--radius-md); flex-wrap:wrap; }
+    .filter-tabs .btn { padding:var(--sp-2) var(--sp-4); font-size:0.8rem; border-radius:var(--radius-sm); background:transparent; color:var(--text-muted); transition:var(--transition-base); border:none; }
+    .filter-tabs .btn.is-active { background:var(--bg-surface); color:var(--text-primary); box-shadow:var(--shadow-sm); }
+    .filter-tabs .btn:hover:not(.is-active) { color:var(--text-secondary); }
+
+    .attendance-panel { max-width:500px; margin:0 auto; text-align:center; }
+    .attendance-panel .attendance-time { font-size:2.5rem; font-family:var(--font-mono); font-weight:600; color:var(--text-primary); margin:var(--sp-4) 0; }
+    .attendance-panel .attendance-date { font-size:1rem; color:var(--text-muted); }
+    .attendance-panel .status-display { margin:var(--sp-4) 0; font-size:1.1rem; }
+    .attendance-panel .action-group { display:flex; gap:var(--sp-3); justify-content:center; flex-wrap:wrap; }
+    .attendance-panel .action-group .btn { min-width:120px; }
+
+    .dashboard-grid { display:grid; grid-template-columns:1fr; gap:var(--sp-5); margin-top:var(--sp-5); }
+    @media (min-width:768px) { .dashboard-grid { grid-template-columns:1fr 1fr; } }
+
+    .page { display:none; }
+    .page.active { display:block; }
+
+    .theme-toggle {
+      display:flex; align-items:center; gap:var(--sp-2);
+      background:var(--bg-input);
+      border:1px solid var(--border-color);
+      border-radius:var(--radius-xl);
+      padding:4px 6px;
+      cursor:pointer;
+      transition:var(--transition-base);
+      position:relative;
+      width:52px; height:28px;
+    }
+    .theme-toggle:hover { border-color:var(--color-primary-light); }
+    .theme-toggle__thumb {
+      width:20px; height:20px; border-radius:50%;
+      background:var(--color-primary-light);
+      transition:var(--transition-base);
+      transform:translateX(0);
+    }
+    [data-theme="dark"] .theme-toggle__thumb { transform:translateX(24px); background:#FCD34D; }
+    .theme-toggle__icon { position:absolute; font-size:12px; line-height:1; transition:var(--transition-base); pointer-events:none; }
+    .theme-toggle__icon--sun { left:6px; color:#F59E0B; opacity:1; }
+    [data-theme="dark"] .theme-toggle__icon--sun { opacity:0; }
+    .theme-toggle__icon--moon { right:6px; color:#94A3B8; opacity:0; }
+    [data-theme="dark"] .theme-toggle__icon--moon { opacity:1; }
+
+    /* Animasi fade-up */
+    [data-animate] { opacity:0; transform:translateY(20px); transition:opacity 0.6s ease, transform 0.6s ease; }
+    [data-animate].animated { opacity:1; transform:translateY(0); }
+
+    @media (max-width:480px) {
+      .panel { padding:var(--sp-4); }
+      .stat-card { padding:var(--sp-3); }
+      .stat-card__value { font-size:1.2rem; }
+      .attendance-panel .attendance-time { font-size:1.8rem; }
+      .attendance-panel .action-group .btn { min-width:100px; font-size:0.8rem; padding:var(--sp-2) var(--sp-4); }
+      table { font-size:0.75rem; }
+      table th, table td { padding:var(--sp-2) var(--sp-3); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== LOADING ====== -->
+  <div id="app-loader">
+    <div class="spinner"></div>
+    <p class="loader-text">Memuat data...</p>
+  </div>
+
+  <!-- ====== TOAST ====== -->
+  <div id="toast-container"></div>
+
+  <!-- ====== SIDEBAR BACKDROP ====== -->
+  <div class="sidebar-backdrop" data-sidebar-close></div>
+
+  <div class="app-shell">
+
+    <!-- ====== SIDEBAR ====== -->
+    <aside class="sidebar">
+      <button class="sidebar__close-btn" data-sidebar-close aria-label="Tutup menu">
+        <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="sidebar__brand">
+        <div class="sidebar__brand-mark">RA</div>
+        <div class="sidebar__brand-text">
+          <span class="sidebar__brand-name">Recharge Absensi</span>
+          <span class="sidebar__brand-sub">Operasional Jakarta</span>
+        </div>
+      </div>
+      <span class="sidebar__section-label">Menu</span>
+      <nav class="nav-menu" id="navMenu">
+        <div class="nav-menu__item is-active" data-page="dashboard">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Dashboard</span>
+        </div>
+        <div class="nav-menu__item" data-page="absensi">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Absensi</span>
+        </div>
+        <div class="nav-menu__item" data-page="riwayat">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+          <span>Riwayat</span>
+        </div>
+        <div class="nav-menu__item" data-page="profil">
+          <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <span>Profil</span>
+        </div>
+      </nav>
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <div class="sidebar__avatar" id="sidebarAvatar">AT</div>
+          <div>
+            <div class="sidebar__user-name" id="sidebarUserName">Atna</div>
+            <div class="sidebar__user-role">Staf Operasional</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ====== MAIN COLUMN ====== -->
+    <div class="main-col">
+
+      <!-- Mobile Topbar -->
+      <div class="mobile-topbar">
+        <button class="mobile-topbar__menu-btn" data-sidebar-open aria-label="Buka menu">
+          <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <span class="mobile-topbar__brand">Recharge Absensi</span>
+        <div style="width:36px"></div>
+      </div>
+
+      <!-- Topbar Desktop -->
+      <header class="topbar">
+        <div class="topbar__title-group">
+          <h1 id="pageTitle">Dashboard</h1>
+          <div class="topbar__breadcrumb" id="pageSubtitle">Ringkasan kehadiran karyawan hari ini</div>
+        </div>
+        <div class="topbar__right">
+          <button class="theme-toggle" aria-label="Toggle dark mode" role="switch" aria-checked="false">
+            <span class="theme-toggle__icon theme-toggle__icon--sun">☀️</span>
+            <span class="theme-toggle__thumb"></span>
+            <span class="theme-toggle__icon theme-toggle__icon--moon">🌙</span>
+          </button>
+          <div class="punch-clock">
+            <span class="punch-clock__dot"></span>
+            <span class="punch-clock__time" data-live-time>--:--:--</span>
+            <span class="punch-clock__date mono" data-live-date>-</span>
+          </div>
+          <button class="topbar__icon-btn" aria-label="Notifikasi">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- ====== CONTENT ====== -->
+      <main class="content">
+
+        <!-- ========== PAGE: DASHBOARD ========== -->
+        <div class="page active" id="page-dashboard">
+          <section class="stat-grid">
+            <div class="stat-card" data-animate="fade-up">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--teal">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="dashStatHadir">0</div>
+              <div class="stat-card__label">Total Hadir (Bulan Ini)</div>
+            </div>
+            <div class="stat-card" data-animate="fade-up" style="animation-delay:0.05s">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--blue">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="dashStatJamKerja">00:00:00</div>
+              <div class="stat-card__label">Total Jam Kerja (Bulan Ini)</div>
+            </div>
+            <div class="stat-card" data-animate="fade-up" style="animation-delay:0.1s">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--amber">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="dashStatTelat">0</div>
+              <div class="stat-card__label">Total Terlambat (Bulan Ini)</div>
+            </div>
+            <div class="stat-card" data-animate="fade-up" style="animation-delay:0.15s">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--teal">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m6 14V9m6 10V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="dashStatPersentase">0%</div>
+              <div class="stat-card__label">Persentase Kehadiran</div>
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel__header">
+              <div>
+                <h2>Statistik Kehadiran</h2>
+                <div class="panel__header-sub">Berdasarkan data presensi Anda pada bulan berjalan</div>
+              </div>
+            </div>
+            <div class="dashboard-grid" style="margin-top:var(--sp-4);">
+              <div class="panel" style="margin-bottom:0;">
+                <div class="panel__header">
+                  <div>
+                    <h2>Grafik Kehadiran Mingguan</h2>
+                    <div class="panel__header-sub">Senin – Minggu, minggu ini</div>
+                  </div>
+                </div>
+                <div style="height:260px;"><canvas id="weeklyAttendanceChart"></canvas></div>
+              </div>
+              <div class="panel" style="margin-bottom:0;">
+                <div class="panel__header">
+                  <div>
+                    <h2>Grafik Kehadiran Bulanan</h2>
+                    <div class="panel__header-sub">Per minggu, bulan berjalan</div>
+                  </div>
+                </div>
+                <div style="height:260px;"><canvas id="monthlyAttendanceChart"></canvas></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="dashboard-grid">
+            <div class="panel" data-animate="fade-up">
+              <div class="panel__header">
+                <div>
+                  <h2>Aktivitas Presensi Hari Ini</h2>
+                  <div class="panel__header-sub">Diperbarui secara langsung</div>
+                </div>
+                <button class="btn btn--ghost" data-nav="riwayat">Lihat semua</button>
+              </div>
+              <div class="timeline" id="timelineContainer">
+                <!-- Diisi oleh JS -->
+              </div>
+            </div>
+            <div class="panel" data-animate="fade-up" style="animation-delay:0.1s">
+              <div class="panel__header">
+                <div>
+                  <h2>Ringkasan Minggu Ini</h2>
+                  <div class="panel__header-sub">Persentase kehadiran per divisi</div>
+                </div>
+              </div>
+              <div class="progress-list">
+                <div class="progress-row">
+                  <div class="progress-row__top"><span>Driver</span><strong class="mono">94%</strong></div>
+                  <div class="progress-track"><div class="progress-fill" style="width:94%"></div></div>
+                </div>
+                <div class="progress-row">
+                  <div class="progress-row__top"><span>Staf Lapangan</span><strong class="mono">88%</strong></div>
+                  <div class="progress-track"><div class="progress-fill" style="width:88%"></div></div>
+                </div>
+                <div class="progress-row">
+                  <div class="progress-row__top"><span>Operasional</span><strong class="mono">97%</strong></div>
+                  <div class="progress-track"><div class="progress-fill" style="width:97%"></div></div>
+                </div>
+                <div class="progress-row">
+                  <div class="progress-row__top"><span>Admin</span><strong class="mono">100%</strong></div>
+                  <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ========== PAGE: ABSENSI ========== -->
+        <div class="page" id="page-absensi">
+          <div class="attendance-panel panel" data-animate="fade-up">
+            <h2 style="margin-bottom:var(--sp-2);">Presensi Hari Ini</h2>
+            <div class="attendance-date" id="attendanceDate"></div>
+            <div class="attendance-time" id="attendanceTime">--:--:--</div>
+
+            <div class="status-display">
+              <span>Status: </span>
+              <span class="status-badge status-badge--alpha" id="statusPresensi">Belum Check-in</span>
+            </div>
+
+            <div class="form-group" style="max-width:300px;margin:0 auto var(--sp-4);">
+              <label for="namaKaryawan">Nama Karyawan</label>
+              <input type="text" id="namaKaryawan" class="input" placeholder="Nama lengkap" />
+            </div>
+
+            <div class="action-group">
+              <button class="btn btn--primary" id="checkInBtn">✅ Check-in</button>
+              <button class="btn btn--outline" id="checkOutBtn" disabled>⏹ Check-out</button>
+            </div>
+
+            <div style="margin-top:var(--sp-5);display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--sp-3);text-align:center;font-size:0.85rem;">
+              <div>
+                <div style="color:var(--text-muted);">Check-in</div>
+                <div class="mono" id="jamCheckIn">--:--:--</div>
+              </div>
+              <div>
+                <div style="color:var(--text-muted);">Check-out</div>
+                <div class="mono" id="jamCheckOut">--:--:--</div>
+              </div>
+              <div>
+                <div style="color:var(--text-muted);">Durasi</div>
+                <div class="mono" id="totalJamKerja">00:00:00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== PAGE: RIWAYAT ========== -->
+        <div class="page" id="page-riwayat">
+          <div class="panel" data-animate="fade-up">
+            <div class="panel__header">
+              <div>
+                <h2>Filter Periode</h2>
+                <div class="panel__header-sub">Pilih rentang waktu yang ingin dilihat</div>
+              </div>
+            </div>
+            <div class="filter-tabs" id="filterTabs">
+              <button class="btn is-active" data-filter="harian">📅 Harian</button>
+              <button class="btn" data-filter="mingguan">📆 Mingguan</button>
+              <button class="btn" data-filter="bulanan">🗓 Bulanan</button>
+            </div>
+          </div>
+
+          <section class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--teal">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="ringkasanHadir">0</div>
+              <div class="stat-card__label">Total Hadir</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--amber">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="ringkasanTelat">0</div>
+              <div class="stat-card__label">Total Terlambat</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--blue">
+                  <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="ringkasanJamKerja">00:00:00</div>
+              <div class="stat-card__label">Total Jam Kerja</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-card__top">
+                <div class="stat-card__icon stat-card__icon--teal">
+                  <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m6 14V9m6 10V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+              </div>
+              <div class="stat-card__value mono" id="ringkasanPersentase">0%</div>
+              <div class="stat-card__label">Persentase Kehadiran</div>
+            </div>
+          </section>
+
+          <div class="panel" data-animate="fade-up" style="animation-delay:0.05s">
+            <div class="panel__header">
+              <div>
+                <h2>Data Presensi</h2>
+                <div class="panel__header-sub">Diperbarui secara langsung</div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nama</th>
+                    <th>Tanggal</th>
+                    <th>Hari</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Durasi</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="riwayatTableBody">
+                  <tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">Memuat data...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ========== PAGE: PROFIL ========== -->
+        <div class="page" id="page-profil">
+          <div class="panel" data-animate="fade-up" style="max-width:560px;margin:0 auto;">
+            <h2 style="margin-bottom:var(--sp-4);">Pengaturan Profil</h2>
+            <div style="display:flex;align-items:center;gap:var(--sp-4);margin-bottom:var(--sp-6);">
+              <div style="width:72px;height:72px;border-radius:50%;background:var(--color-primary-light);color:#fff;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:600;flex-shrink:0;" id="profilAvatar">AT</div>
+              <div>
+                <div style="font-weight:600;font-size:1.2rem;" id="profilDisplayName">Atna</div>
+                <div style="color:var(--text-muted);font-size:0.9rem;">Staf Operasional</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="profilNama">Nama Lengkap</label>
+              <input type="text" id="profilNama" class="input" placeholder="Nama lengkap" />
+            </div>
+            <div class="form-group">
+              <label for="profilEmail">Email</label>
+              <input type="email" id="profilEmail" class="input" placeholder="email@domain.com" />
+            </div>
+            <div class="form-group">
+              <label for="profilDivisi">Divisi</label>
+              <input type="text" id="profilDivisi" class="input" placeholder="Divisi" />
+            </div>
+
+            <button class="btn btn--primary btn--block" id="simpanProfilBtn">💾 Simpan Perubahan</button>
+
+            <hr style="border-color:var(--border-color);margin:var(--sp-5) 0;" />
+
+            <div style="display:flex;gap:var(--sp-3);flex-wrap:wrap;">
+              <button class="btn btn--outline" id="resetNamaBtn">🔄 Reset Nama</button>
+              <button class="btn btn--danger" id="clearDataBtn">🗑 Hapus Data Lokal</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       JAVASCRIPT — Semua logika aplikasi
+       ========================================================= -->
+  <script>
+    // =========================================================
+    // FIREBASE CONFIG — GANTI DENGAN MILIK ANDA
+    // =========================================================
+    const firebaseConfig = {
+      apiKey: "GANTI_DENGAN_API_KEY",
+      authDomain: "GANTI_DENGAN_PROJECT.firebaseapp.com",
+      projectId: "GANTI_DENGAN_PROJECT_ID",
+      storageBucket: "GANTI_DENGAN_PROJECT.appspot.com",
+      messagingSenderId: "GANTI_DENGAN_SENDER_ID",
+      appId: "GANTI_DENGAN_APP_ID",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+
+    // =========================================================
+    // UTILITIES — Toast, Loader, Dark Mode, Validasi, dll
+    // =========================================================
+    (function() {
+      // Toast
+      let toastContainer = document.getElementById('toast-container');
+      window.showToast = function(message, type = 'info', duration = 4000) {
+        const icons = { success:'✅', error:'❌', warning:'⚠️', info:'ℹ️' };
+        const toast = document.createElement('div');
+        toast.className = `toast toast--${type}`;
+        toast.innerHTML = `
+          <span class="toast__icon">${icons[type] || 'ℹ️'}</span>
+          <span class="toast__body">${message}</span>
+          <button class="toast__close" aria-label="Tutup notifikasi">✕</button>
+        `;
+        toast.querySelector('.toast__close').addEventListener('click', () => removeToast(toast));
+        toastContainer.appendChild(toast);
+        const tid = setTimeout(() => removeToast(toast), duration);
+        toast.dataset.timeoutId = tid;
+        toast.addEventListener('mouseenter', () => clearTimeout(toast.dataset.timeoutId));
+        toast.addEventListener('mouseleave', () => {
+          const newTid = setTimeout(() => removeToast(toast), 2000);
+          toast.dataset.timeoutId = newTid;
+        });
+        return toast;
+      };
+      function removeToast(toast) {
+        if (!toast || toast.classList.contains('toast-removing')) return;
+        toast.classList.add('toast-removing');
+        clearTimeout(toast.dataset.timeoutId);
+        toast.addEventListener('animationend', () => toast.remove());
+      }
+
+      // Loader
+      const loader = document.getElementById('app-loader');
+      window.showLoader = function(show = true) {
+        if (!loader) return;
+        show ? loader.classList.remove('hidden') : loader.classList.add('hidden');
+      };
+      window.addEventListener('load', () => window.showLoader(false));
+
+      // Dark Mode
+      const THEME_KEY = 'recharge-theme';
+      window.setTheme = function(theme) {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+          root.setAttribute('data-theme', 'dark');
+          localStorage.setItem(THEME_KEY, 'dark');
+        } else {
+          root.removeAttribute('data-theme');
+          localStorage.setItem(THEME_KEY, 'light');
+        }
+        const toggle = document.querySelector('.theme-toggle');
+        if (toggle) toggle.setAttribute('aria-checked', theme === 'dark');
+      };
+      window.toggleTheme = function() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        window.setTheme(next);
+        window.showToast(`Mode ${next === 'dark' ? 'Gelap' : 'Terang'} aktif`, 'info');
+      };
+      function initTheme() {
+        const saved = localStorage.getItem(THEME_KEY);
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const theme = saved || (prefersDark ? 'dark' : 'light');
+        window.setTheme(theme);
+        document.querySelector('.theme-toggle')?.addEventListener('click', window.toggleTheme);
+      }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initTheme);
+      else initTheme();
+
+      // Validators
+      window.Validators = {
+        nama: function(value) {
+          const trimmed = value?.trim() || '';
+          if (trimmed.length < 3) return { valid: false, message: 'Nama minimal 3 karakter' };
+          if (!/^[a-zA-Z\s]+$/.test(trimmed)) return { valid: false, message: 'Nama hanya huruf dan spasi' };
+          return { valid: true, message: '' };
+        },
+        email: function(value) {
+          if (!value) return { valid: true, message: '' };
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) return { valid: false, message: 'Format email tidak valid' };
+          return { valid: true, message: '' };
+        },
+        required: function(value) {
+          const trimmed = value?.trim() || '';
+          if (trimmed.length === 0) return { valid: false, message: 'Field ini wajib diisi' };
+          return { valid: true, message: '' };
+        }
+      };
+      window.markInputError = function(inputEl, isValid, message) {
+        if (!inputEl) return;
+        const group = inputEl.closest('.form-group');
+        const helper = group?.querySelector('.helper-text');
+        if (!isValid) {
+          inputEl.classList.add('input--error');
+          if (helper) { helper.classList.add('helper-text--error'); helper.textContent = message || ''; }
+        } else {
+          inputEl.classList.remove('input--error');
+          if (helper) { helper.classList.remove('helper-text--error'); helper.textContent = ''; }
+        }
+      };
+
+      // Animasi Intersection Observer
+      if ('IntersectionObserver' in window) {
+        const els = document.querySelectorAll('[data-animate]');
+        const obs = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('animated');
+              obs.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+        els.forEach(el => obs.observe(el));
+      }
+    })();
+
+    // =========================================================
+    // SIDEBAR
+    // =========================================================
+    (function() {
+      const sidebar = document.querySelector('.sidebar');
+      const backdrop = document.querySelector('.sidebar-backdrop');
+      const openBtn = document.querySelector('[data-sidebar-open]');
+      const closeBtns = document.querySelectorAll('[data-sidebar-close]');
+
+      function openSidebar() {
+        sidebar?.classList.add('sidebar--open');
+        backdrop?.classList.add('sidebar-backdrop--visible');
+        document.body.style.overflow = 'hidden';
+      }
+      function closeSidebar() {
+        sidebar?.classList.remove('sidebar--open');
+        backdrop?.classList.remove('sidebar-backdrop--visible');
+        document.body.style.overflow = '';
+      }
+      openBtn?.addEventListener('click', openSidebar);
+      closeBtns.forEach(btn => btn.addEventListener('click', closeSidebar));
+      backdrop?.addEventListener('click', closeSidebar);
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+      window.addEventListener('resize', () => { if (window.innerWidth >= 768) closeSidebar(); });
+    })();
+
+    // =========================================================
+    // CLOCK
+    // =========================================================
+    (function() {
+      const timeEl = document.querySelector('[data-live-time]');
+      const dateEl = document.querySelector('[data-live-date]');
+      if (!timeEl && !dateEl) return;
+      const DAYS = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+      function pad(n) { return String(n).padStart(2,'0'); }
+      function update() {
+        const now = new Date();
+        if (timeEl) {
+          timeEl.textContent = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        }
+        if (dateEl) {
+          dateEl.textContent = `${DAYS[now.getDay()]}, ${now.getDate()} ${MONTHS[now.getMonth()]} ${now.getFullYear()}`;
+        }
+        // Update attendance date too
+        const attDate = document.getElementById('attendanceDate');
+        if (attDate) attDate.textContent = dateEl?.textContent || '';
+      }
+      update();
+      setInterval(update, 1000);
+    })();
+
+    // =========================================================
+    // NAVIGASI SPA
+    // =========================================================
+    (function() {
+      const navItems = document.querySelectorAll('.nav-menu__item');
+      const pages = {
+        dashboard: document.getElementById('page-dashboard'),
+        absensi: document.getElementById('page-absensi'),
+        riwayat: document.getElementById('page-riwayat'),
+        profil: document.getElementById('page-profil'),
+      };
+      const pageTitle = document.getElementById('pageTitle');
+      const pageSubtitle = document.getElementById('pageSubtitle');
+      const titles = {
+        dashboard: { title: 'Dashboard', subtitle: 'Ringkasan kehadiran karyawan hari ini' },
+        absensi: { title: 'Absensi', subtitle: 'Check-in / Check-out harian' },
+        riwayat: { title: 'Riwayat Presensi', subtitle: 'Data kehadiran karyawan' },
+        profil: { title: 'Profil', subtitle: 'Informasi akun dan pengaturan' },
+      };
+
+      function navigate(page) {
+        // Sembunyikan semua halaman
+        Object.values(pages).forEach(p => p?.classList.remove('active'));
+        // Tampilkan halaman target
+        const target = pages[page];
+        if (target) target.classList.add('active');
+        // Update nav
+        navItems.forEach(item => {
+          item.classList.toggle('is-active', item.dataset.page === page);
+        });
+        // Update topbar
+        if (pageTitle && titles[page]) pageTitle.textContent = titles[page].title;
+        if (pageSubtitle && titles[page]) pageSubtitle.textContent = titles[page].subtitle;
+        // Tutup sidebar mobile
+        if (window.innerWidth < 768) {
+          document.querySelector('.sidebar')?.classList.remove('sidebar--open');
+          document.querySelector('.sidebar-backdrop')?.classList.remove('sidebar-backdrop--visible');
+          document.body.style.overflow = '';
+        }
+        // Trigger animasi ulang untuk elemen yang baru muncul
+        setTimeout(() => {
+          const newPage = document.querySelector('.page.active');
+          if (newPage) {
+            const animEls = newPage.querySelectorAll('[data-animate]');
+            animEls.forEach(el => {
+              el.classList.remove('animated');
+              // Re-observe
+              if ('IntersectionObserver' in window) {
+                const obs = new IntersectionObserver((entries) => {
+                  entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                      entry.target.classList.add('animated');
+                      obs.unobserve(entry.target);
+                    }
+                  });
+                }, { threshold: 0.1, rootMargin: '0px 0px -20px 0px' });
+                obs.observe(el);
+              }
+            });
+          }
+        }, 50);
+      }
+
+      navItems.forEach(item => {
+        item.addEventListener('click', () => {
+          const page = item.dataset.page;
+          if (page) navigate(page);
+        });
+      });
+
+      // Tombol "Lihat semua" di dashboard
+      document.querySelectorAll('[data-nav]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const page = btn.dataset.nav;
+          if (page) navigate(page);
+        });
+      });
+
+      // Default: dashboard
+      navigate('dashboard');
+    })();
+
+    // =========================================================
+    // FIRESTORE SERVICE
+    // =========================================================
+    (function() {
+      const COLLECTION = 'absensi';
+      const LATE_THRESHOLD_MINUTES = 8 * 60 + 15;
+
+      function pad(n) { return String(n).padStart(2, '0'); }
+      function toDateStr(date) {
+        return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+      }
+      function slugify(nama) {
+        return String(nama).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+      function docId(tanggal, nama) { return `${tanggal}_${slugify(nama)}`; }
+      function formatDuration(ms) {
+        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+        return `${pad(Math.floor(totalSeconds/3600))}:${pad(Math.floor((totalSeconds%3600)/60))}:${pad(totalSeconds%60)}`;
+      }
+      function computeStatus(checkInDate) {
+        if (!checkInDate) return 'alpha';
+        const minutes = checkInDate.getHours() * 60 + checkInDate.getMinutes();
+        return minutes > LATE_THRESHOLD_MINUTES ? 'telat' : 'hadir';
+      }
+      function normalizeRecord(id, data) {
+        const [y,m,d] = data.tanggal.split('-').map(Number);
+        return {
+          id, nama: data.nama || '', tanggal: data.tanggal,
+          date: new Date(y, m-1, d),
+          checkIn: data.checkIn ? new Date(data.checkIn) : null,
+          checkOut: data.checkOut ? new Date(data.checkOut) : null,
+          totalJamKerjaMs: data.totalJamKerjaMs || 0,
+          status: data.status || 'alpha',
+        };
+      }
+
+      function checkIn(nama, tanggal, checkInDate) {
+        const id = docId(tanggal, nama);
+        return db.collection(COLLECTION).doc(id).set({
+          nama, tanggal,
+          checkIn: checkInDate.toISOString(),
+          checkOut: null,
+          totalJamKerjaMs: 0,
+          status: computeStatus(checkInDate),
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+
+      function checkOut(nama, tanggal, checkInDate, checkOutDate) {
+        const id = docId(tanggal, nama);
+        const totalMs = checkOutDate - checkInDate;
+        return db.collection(COLLECTION).doc(id).set({
+          checkOut: checkOutDate.toISOString(),
+          totalJamKerjaMs: totalMs,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      }
+
+      function getToday(nama, tanggal) {
+        const id = docId(tanggal, nama);
+        return db.collection(COLLECTION).doc(id).get()
+          .then(snap => snap.exists ? normalizeRecord(snap.id, snap.data()) : null);
+      }
+
+      function subscribeAll(callback) {
+        return db.collection(COLLECTION).onSnapshot(
+          snapshot => {
+            const records = snapshot.docs.map(doc => normalizeRecord(doc.id, doc.data()));
+            callback(records);
+          },
+          error => { console.error('Firestore error:', error); window.showToast?.('Gagal memuat data presensi', 'error'); }
+        );
+      }
+
+      window.AbsensiService = {
+        COLLECTION, docId, toDateStr, formatDuration, computeStatus,
+        checkIn, checkOut, getToday, subscribeAll,
+      };
+    })();
+
+    // =========================================================
+    // ATTENDANCE (Absensi)
+    // =========================================================
+    (function() {
+      const NAMA_KEY = 'absensi_nama_aktif';
+      const checkInBtn = document.getElementById('checkInBtn');
+      const checkOutBtn = document.getElementById('checkOutBtn');
+      if (!checkInBtn && !checkOutBtn) return;
+
+      const statusEl = document.getElementById('statusPresensi');
+      const jamCheckInEl = document.getElementById('jamCheckIn');
+      const jamCheckOutEl = document.getElementById('jamCheckOut');
+      const totalJamKerjaEl = document.getElementById('totalJamKerja');
+      const namaInput = document.getElementById('namaKaryawan');
+
+      let nama = localStorage.getItem(NAMA_KEY);
+      if (!nama) {
+        nama = prompt('Masukkan nama kamu (akan diingat):');
+        if (nama && nama.trim()) {
+          const valid = window.Validators?.nama(nama);
+          if (valid && !valid.valid) {
+            window.showToast?.(valid.message, 'error');
+            return;
+          }
+          localStorage.setItem(NAMA_KEY, nama.trim());
+          nama = nama.trim();
+        } else return;
+      }
+      if (namaInput) namaInput.value = nama;
+
+      const today = new Date();
+      const tanggal = window.AbsensiService.toDateStr(today);
+      let checkInDate = null, checkOutDate = null, liveTimer = null;
+
+      function setBadge(status) {
+        if (!statusEl) return;
+        const label = { hadir:'Hadir', telat:'Telat', izin:'Izin', alpha:'Alpha' }[status] || status;
+        statusEl.textContent = label;
+        statusEl.className = `status-badge status-badge--${status}`;
+      }
+
+      function startLiveDuration() {
+        if (liveTimer) clearInterval(liveTimer);
+        liveTimer = setInterval(() => {
+          if (!checkInDate || checkOutDate) return;
+          const ms = new Date() - checkInDate;
+          if (totalJamKerjaEl) totalJamKerjaEl.textContent = window.AbsensiService.formatDuration(ms);
+        }, 1000);
+      }
+
+      function applyRecordToUI(record) {
+        if (!record) return;
+        checkInDate = record.checkIn;
+        checkOutDate = record.checkOut;
+        if (checkInDate) {
+          if (jamCheckInEl) jamCheckInEl.textContent = `${pad(checkInDate.getHours())}:${pad(checkInDate.getMinutes())}:${pad(checkInDate.getSeconds())}`;
+          if (checkInBtn) checkInBtn.disabled = true;
+          setBadge(record.status);
+          startLiveDuration();
+        }
+        if (checkOutDate) {
+          if (jamCheckOutEl) jamCheckOutEl.textContent = `${pad(checkOutDate.getHours())}:${pad(checkOutDate.getMinutes())}:${pad(checkOutDate.getSeconds())}`;
+          if (totalJamKerjaEl) totalJamKerjaEl.textContent = window.AbsensiService.formatDuration(record.totalJamKerjaMs);
+          if (checkOutBtn) checkOutBtn.disabled = true;
+          if (liveTimer) clearInterval(liveTimer);
+        } else if (checkInDate) {
+          if (checkOutBtn) checkOutBtn.disabled = false;
+        }
+      }
+      function pad(n) { return String(n).padStart(2,'0'); }
+
+      window.showLoader?.(true);
+      window.AbsensiService.getToday(nama, tanggal)
+        .then(record => { applyRecordToUI(record); window.showLoader?.(false); })
+        .catch(err => { console.error(err); window.showToast?.('Gagal memuat data presensi', 'error'); window.showLoader?.(false); });
+
+      if (checkInBtn) {
+        checkInBtn.addEventListener('click', () => {
+          if (checkInDate) { window.showToast?.('Sudah check-in hari ini', 'warning'); return; }
+          checkInBtn.disabled = true;
+          window.showLoader?.(true);
+          const now = new Date();
+          window.AbsensiService.checkIn(nama, tanggal, now)
+            .then(() => {
+              const record = { checkIn: now, checkOut: null, totalJamKerjaMs: 0, status: window.AbsensiService.computeStatus(now) };
+              applyRecordToUI(record);
+              window.showToast?.('✅ Check-in berhasil!', 'success');
+              window.showLoader?.(false);
+            })
+            .catch(err => { console.error(err); checkInBtn.disabled = false; window.showToast?.('❌ Gagal check-in', 'error'); window.showLoader?.(false); });
+        });
+      }
+
+      if (checkOutBtn) {
+        checkOutBtn.addEventListener('click', () => {
+          if (!checkInDate) { window.showToast?.('Belum check-in', 'warning'); return; }
+          if (checkOutDate) { window.showToast?.('Sudah check-out', 'warning'); return; }
+          checkOutBtn.disabled = true;
+          window.showLoader?.(true);
+          const now = new Date();
+          window.AbsensiService.checkOut(nama, tanggal, checkInDate, now)
+            .then(() => {
+              const record = { checkIn: checkInDate, checkOut: now, totalJamKerjaMs: now - checkInDate, status: window.AbsensiService.computeStatus(checkInDate) };
+              applyRecordToUI(record);
+              window.showToast?.('✅ Check-out berhasil!', 'success');
+              window.showLoader?.(false);
+            })
+            .catch(err => { console.error(err); checkOutBtn.disabled = false; window.showToast?.('❌ Gagal check-out', 'error'); window.showLoader?.(false); });
+        });
+      }
+
+      // Update nama di profil juga
+      document.getElementById('profilNama')?.addEventListener('input', function() {
+        const val = this.value.trim();
+        if (val.length >= 3) {
+          localStorage.setItem(NAMA_KEY, val);
+          document.getElementById('sidebarUserName').textContent = val;
+          document.getElementById('profilDisplayName').textContent = val;
+          const avatar = document.getElementById('sidebarAvatar');
+          const avatar2 = document.getElementById('profilAvatar');
+          const initial = val.charAt(0).toUpperCase();
+          if (avatar) avatar.textContent = initial;
+          if (avatar2) avatar2.textContent = initial;
+        }
+      });
+    })();
+
+    // =========================================================
+    // DASHBOARD STATS
+    // =========================================================
+    (function() {
+      const weeklyCanvas = document.getElementById('weeklyAttendanceChart');
+      if (!weeklyCanvas) return;
+
+      const DAY_LABELS_SHORT = ['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
+      let weeklyChart = null, monthlyChart = null;
+
+      function startOfDay(d) { const c = new Date(d); c.setHours(0,0,0,0); return c; }
+      function startOfWeek(d) {
+        const c = startOfDay(d);
+        const diff = c.getDay() === 0 ? 6 : c.getDay() - 1;
+        c.setDate(c.getDate() - diff);
+        return c;
+      }
+      function startOfMonth(d) { const c = startOfDay(d); c.setDate(1); return c; }
+      function countWeekdays(start,end) {
+        let count=0; const cur=new Date(start);
+        while (cur <= end) {
+          if (cur.getDay()!==0 && cur.getDay()!==6) count++;
+          cur.setDate(cur.getDate()+1);
+        }
+        return count;
+      }
+      function sameDate(a,b) {
+        return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+      }
+
+      function renderStatCards(records, today) {
+        const monthStart = startOfMonth(today);
+        const dayEnd = startOfDay(today);
+        const monthRecords = records.filter(r => {
+          const d = startOfDay(r.date);
+          return d >= monthStart && d <= dayEnd;
+        });
+        const totalHadir = monthRecords.filter(r => r.checkIn).length;
+        const totalTelat = monthRecords.filter(r => r.status === 'telat').length;
+        const totalMs = monthRecords.reduce((s,r) => s + (r.totalJamKerjaMs || 0), 0);
+        const workingDays = countWeekdays(monthStart, dayEnd);
+        const persentase = workingDays > 0 ? Math.min(100, Math.round((totalHadir / workingDays) * 100)) : 0;
+
+        const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        setText('dashStatHadir', totalHadir);
+        setText('dashStatJamKerja', window.AbsensiService.formatDuration(totalMs));
+        setText('dashStatTelat', totalTelat);
+        setText('dashStatPersentase', `${persentase}%`);
+      }
+
+      function buildWeeklyChart(records, today) {
+        const canvas = document.getElementById('weeklyAttendanceChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        const weekStart = startOfWeek(today);
+        const hadirData=[], telatData=[], alphaData=[];
+        for (let i=0; i<7; i++) {
+          const day = new Date(weekStart); day.setDate(weekStart.getDate()+i);
+          const isWeekend = day.getDay()===0 || day.getDay()===6;
+          const isFuture = day > startOfDay(today);
+          const record = records.find(r => sameDate(r.date, day));
+          let hadir=0, telat=0, alpha=0;
+          if (record && record.checkIn) {
+            if (record.status === 'telat') telat=1;
+            else hadir=1;
+          } else if (!isWeekend && !isFuture) {
+            alpha=1;
+          }
+          hadirData.push(hadir); telatData.push(telat); alphaData.push(alpha);
+        }
+        if (weeklyChart) weeklyChart.destroy();
+        weeklyChart = new Chart(canvas, {
+          type: 'bar',
+          data: {
+            labels: DAY_LABELS_SHORT,
+            datasets: [
+              { label:'Hadir', data:hadirData, backgroundColor:'#2E9678', borderRadius:4, maxBarThickness:28 },
+              { label:'Terlambat', data:telatData, backgroundColor:'#E8A33D', borderRadius:4, maxBarThickness:28 },
+              { label:'Alpha', data:alphaData, backgroundColor:'#D9534F', borderRadius:4, maxBarThickness:28 },
+            ]
+          },
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            scales: { x:{ stacked:true, grid:{display:false} }, y:{ stacked:true, beginAtZero:true, ticks:{stepSize:1}, max:1 } },
+            plugins: { legend: { position:'bottom', labels:{ boxWidth:10, font:{ family:'Inter', size:11 } } } }
+          }
+        });
+      }
+
+      function buildMonthlyChart(records, today) {
+        const canvas = document.getElementById('monthlyAttendanceChart');
+        if (!canvas || typeof Chart === 'undefined') return;
+        const daysInMonth = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
+        const weekBuckets = [];
+        for (let d=1; d<=daysInMonth; d+=7) weekBuckets.push({ from:d, to:Math.min(d+6, daysInMonth) });
+        const labels = weekBuckets.map((_,i) => `Minggu ${i+1}`);
+        const hadirData = weekBuckets.map(w => {
+          let count=0;
+          for (let day=w.from; day<=w.to; day++) {
+            const date = new Date(today.getFullYear(), today.getMonth(), day);
+            if (date > startOfDay(today)) continue;
+            const record = records.find(r => sameDate(r.date, date));
+            if (record && record.checkIn) count++;
+          }
+          return count;
+        });
+        if (monthlyChart) monthlyChart.destroy();
+        monthlyChart = new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label:'Hari Hadir',
+              data:hadirData,
+              borderColor:'#1F7A64',
+              backgroundColor:'rgba(46,150,120,0.15)',
+              tension:0.35, fill:true,
+              pointBackgroundColor:'#1F7A64', pointRadius:4
+            }]
+          },
+          options: {
+            responsive:true, maintainAspectRatio:false,
+            scales: { x:{ grid:{display:false} }, y:{ beginAtZero:true, ticks:{stepSize:1} } },
+            plugins: { legend: { position:'bottom', labels:{ boxWidth:10, font:{ family:'Inter', size:11 } } } }
+          }
+        });
+      }
+
+      // Timeline
+      function renderTimeline(records, today) {
+        const container = document.getElementById('timelineContainer');
+        if (!container) return;
+        const dayStart = startOfDay(today);
+        const dayRecords = records.filter(r => r.date >= dayStart && r.date <= startOfDay(today))
+          .sort((a,b) => (b.checkIn || b.date) - (a.checkIn || a.date));
+        if (dayRecords.length === 0) {
+          container.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:16px;">Belum ada aktivitas hari ini.</div>`;
+          return;
+        }
+        const statusLabel = { hadir:'Hadir', telat:'Telat', izin:'Izin', alpha:'Alpha' };
+        container.innerHTML = dayRecords.slice(0, 5).map(r => {
+          const time = r.checkIn ? `${pad(r.checkIn.getHours())}:${pad(r.checkIn.getMinutes())}` : '--:--';
+          const initial = r.nama ? r.nama.charAt(0).toUpperCase() : '?';
+          return `
+            <div class="timeline__item">
+              <div class="timeline__time mono">${time}</div>
+              <div class="timeline__avatar">${initial}</div>
+              <div class="timeline__body">
+                <div class="timeline__name">${r.nama || 'Tanpa Nama'}</div>
+                <div class="timeline__meta">${r.checkIn ? 'Melakukan check-in' : 'Belum check-in'}</div>
+              </div>
+              <span class="status-badge status-badge--${r.status}">${statusLabel[r.status] || r.status}</span>
+            </div>
+          `;
+        }).join('');
+        function pad(n){ return String(n).padStart(2,'0'); }
+      }
+
+      window.showLoader?.(true);
+      window.AbsensiService.subscribeAll((records) => {
+        const today = new Date();
+        renderStatCards(records, today);
+        buildWeeklyChart(records, today);
+        buildMonthlyChart(records, today);
+        renderTimeline(records, today);
+        window.showLoader?.(false);
+      });
+    })();
+
+    // =========================================================
+    // RIWAYAT
+    // =========================================================
+    (function() {
+      const tableBody = document.getElementById('riwayatTableBody');
+      if (!tableBody) return;
+
+      const filterButtons = document.querySelectorAll('#filterTabs .btn');
+      const elHadir = document.getElementById('ringkasanHadir');
+      const elTelat = document.getElementById('ringkasanTelat');
+      const elJamKerja = document.getElementById('ringkasanJamKerja');
+      const elPersentase = document.getElementById('ringkasanPersentase');
+
+      let allRecords = [];
+      let currentFilter = 'harian';
+
+      const HARI = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+      const STATUS_LABEL = { hadir:'Hadir', telat:'Telat', izin:'Izin', alpha:'Alpha' };
+
+      function startOfDay(d) { const c = new Date(d); c.setHours(0,0,0,0); return c; }
+      function startOfWeek(d) { const c = startOfDay(d); const diff = c.getDay()===0 ? 6 : c.getDay()-1; c.setDate(c.getDate()-diff); return c; }
+      function startOfMonth(d) { const c = startOfDay(d); c.setDate(1); return c; }
+      function countWeekdays(start,end) { let count=0; const cur=new Date(start); while(cur<=end){ if(cur.getDay()!==0 && cur.getDay()!==6) count++; cur.setDate(cur.getDate()+1); } return count; }
+      function formatJam(date) { return date ? `${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}` : '-'; }
+
+      function getRange(filter, today) {
+        const dayEnd = startOfDay(today);
+        if (filter === 'mingguan') return [startOfWeek(today), dayEnd];
+        if (filter === 'bulanan') return [startOfMonth(today), dayEnd];
+        return [dayEnd, dayEnd];
+      }
+
+      function render() {
+        const today = new Date();
+        const [start, end] = getRange(currentFilter, today);
+        const filtered = allRecords.filter(r => r.date >= start && r.date <= end)
+          .sort((a,b) => b.date - a.date);
+
+        tableBody.innerHTML = '';
+        if (filtered.length === 0) {
+          tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px;">Belum ada data presensi pada periode ini.</td></tr>`;
+        } else {
+          filtered.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${r.nama || '-'}</td>
+              <td>${r.tanggal}</td>
+              <td>${HARI[r.date.getDay()]}</td>
+              <td class="mono">${formatJam(r.checkIn)}</td>
+              <td class="mono">${formatJam(r.checkOut)}</td>
+              <td class="mono">${window.AbsensiService.formatDuration(r.totalJamKerjaMs)}</td>
+              <td><span class="status-badge status-badge--${r.status}">${STATUS_LABEL[r.status] || r.status}</span></td>
+            `;
+            tableBody.appendChild(tr);
+          });
+        }
+
+        const totalHadir = filtered.filter(r => r.checkIn).length;
+        const totalTelat = filtered.filter(r => r.status === 'telat').length;
+        const totalMs = filtered.reduce((s,r) => s + (r.totalJamKerjaMs || 0), 0);
+        const workingDays = countWeekdays(start, end);
+        const persentase = workingDays > 0 ? Math.min(100, Math.round((totalHadir / workingDays) * 100)) : 0;
+
+        if (elHadir) elHadir.textContent = totalHadir;
+        if (elTelat) elTelat.textContent = totalTelat;
+        if (elJamKerja) elJamKerja.textContent = window.AbsensiService.formatDuration(totalMs);
+        if (elPersentase) elPersentase.textContent = `${persentase}%`;
+      }
+
+      filterButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          filterButtons.forEach(b => b.classList.remove('is-active'));
+          btn.classList.add('is-active');
+          currentFilter = btn.dataset.filter;
+          render();
+        });
+      });
+
+      window.AbsensiService.subscribeAll((records) => {
+        allRecords = records;
+        render();
+      });
+    })();
+
+    // =========================================================
+    // PROFIL
+    // =========================================================
+    (function() {
+      const NAMA_KEY = 'absensi_nama_aktif';
+      const profilNama = document.getElementById('profilNama');
+      const profilEmail = document.getElementById('profilEmail');
+      const profilDivisi = document.getElementById('profilDivisi');
+      const simpanBtn = document.getElementById('simpanProfilBtn');
+      const resetBtn = document.getElementById('resetNamaBtn');
+      const clearBtn = document.getElementById('clearDataBtn');
+
+      // Load data
+      const savedNama = localStorage.getItem(NAMA_KEY) || '';
+      if (profilNama) profilNama.value = savedNama;
+      if (profilEmail) profilEmail.value = localStorage.getItem('profil_email') || '';
+      if (profilDivisi) profilDivisi.value = localStorage.getItem('profil_divisi') || '';
+
+      // Simpan
+      simpanBtn?.addEventListener('click', () => {
+        const nama = profilNama?.value?.trim();
+        if (!nama || nama.length < 3) {
+          window.showToast?.('Nama minimal 3 karakter', 'error');
+          return;
+        }
+        const valid = window.Validators?.nama(nama);
+        if (valid && !valid.valid) {
+          window.showToast?.(valid.message, 'error');
+          return;
+        }
+        localStorage.setItem(NAMA_KEY, nama);
+        localStorage.setItem('profil_email', profilEmail?.value?.trim() || '');
+        localStorage.setItem('profil_divisi', profilDivisi?.value?.trim() || '');
+        // Update sidebar
+        document.getElementById('sidebarUserName').textContent = nama;
+        document.getElementById('profilDisplayName').textContent = nama;
+        const avatar = document.getElementById('sidebarAvatar');
+        const avatar2 = document.getElementById('profilAvatar');
+        const initial = nama.charAt(0).toUpperCase();
+        if (avatar) avatar.textContent = initial;
+        if (avatar2) avatar2.textContent = initial;
+        window.showToast?.('✅ Profil berhasil disimpan!', 'success');
+      });
+
+      resetBtn?.addEventListener('click', () => {
+        localStorage.removeItem(NAMA_KEY);
+        if (profilNama) profilNama.value = '';
+        window.showToast?.('🔄 Nama telah direset', 'info');
+      });
+
+      clearBtn?.addEventListener('click', () => {
+        if (confirm('Hapus semua data lokal? (nama tersimpan akan dihapus)')) {
+          localStorage.removeItem(NAMA_KEY);
+          localStorage.removeItem('recharge-theme');
+          localStorage.removeItem('profil_email');
+          localStorage.removeItem('profil_divisi');
+          window.showToast?.('🗑 Data lokal dibersihkan', 'info');
+          setTimeout(() => location.reload(), 800);
+        }
+      });
+    })();
+
+    console.log('✅ Recharge Absensi SPA siap digunakan!');
+  </script>
+</body>
+</html>
