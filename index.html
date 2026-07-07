@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Absensi Karyawan</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div class="sidebar-backdrop" data-sidebar-close></div>
+
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <button class="sidebar__close-btn" data-sidebar-close aria-label="Tutup menu">
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-mark">RA</div>
+      <div class="sidebar__brand-text">
+        <span class="sidebar__brand-name">Recharge Absensi</span>
+        <span class="sidebar__brand-sub">Operasional Jakarta</span>
+      </div>
+    </div>
+
+    <span class="sidebar__section-label">Menu</span>
+    <nav class="nav-menu">
+      <a href="index.html" class="nav-menu__item is-active">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="absensi.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Absensi</span>
+      </a>
+      <a href="riwayat.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Riwayat</span>
+      </a>
+      <a href="profil.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Profil</span>
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar">AT</div>
+        <div>
+          <div class="sidebar__user-name">Atna</div>
+          <div class="sidebar__user-role">Staf Operasional</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN COLUMN ============ -->
+  <div class="main-col">
+
+    <div class="mobile-topbar">
+      <button class="mobile-topbar__menu-btn" data-sidebar-open aria-label="Buka menu">
+        <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="mobile-topbar__brand">Recharge Absensi</span>
+      <div style="width:36px"></div>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar__title-group">
+        <h1>Dashboard</h1>
+        <div class="topbar__breadcrumb">Ringkasan kehadiran karyawan hari ini</div>
+      </div>
+      <div class="topbar__right">
+        <div class="punch-clock">
+          <span class="punch-clock__dot"></span>
+          <span class="punch-clock__time" data-live-time>--:--:--</span>
+          <span class="punch-clock__date mono" data-live-date>-</span>
+        </div>
+        <button class="topbar__icon-btn" aria-label="Notifikasi">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- Kartu ringkasan -->
+      <section class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-card__top">
+            <div class="stat-card__icon stat-card__icon--teal">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="stat-card__delta stat-card__delta--up">+2</span>
+          </div>
+          <div class="stat-card__value mono">42</div>
+          <div class="stat-card__label">Hadir hari ini</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card__top">
+            <div class="stat-card__icon stat-card__icon--amber">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <span class="stat-card__delta stat-card__delta--down">-1</span>
+          </div>
+          <div class="stat-card__value mono">5</div>
+          <div class="stat-card__label">Terlambat</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card__top">
+            <div class="stat-card__icon stat-card__icon--blue">
+              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="stat-card__delta stat-card__delta--up">+1</span>
+          </div>
+          <div class="stat-card__value mono">3</div>
+          <div class="stat-card__label">Izin / Cuti</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card__top">
+            <div class="stat-card__icon stat-card__icon--red">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            </div>
+            <span class="stat-card__delta stat-card__delta--down">0</span>
+          </div>
+          <div class="stat-card__value mono">2</div>
+          <div class="stat-card__label">Alpha</div>
+        </div>
+      </section>
+
+      <!-- ============ DASHBOARD STATISTIK (data nyata dari sistem) ============ -->
+      <section class="panel">
+        <div class="panel__header">
+          <div>
+            <h2>Statistik Kehadiran</h2>
+            <div class="panel__header-sub">Berdasarkan data presensi Anda pada bulan berjalan</div>
+          </div>
+        </div>
+
+        <div class="stat-grid" style="margin-bottom: var(--sp-6);">
+          <div class="stat-card">
+            <div class="stat-card__top">
+              <div class="stat-card__icon stat-card__icon--teal">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="stat-card__value mono" id="dashStatHadir">0</div>
+            <div class="stat-card__label">Total Hadir (Bulan Ini)</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card__top">
+              <div class="stat-card__icon stat-card__icon--blue">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="stat-card__value mono" id="dashStatJamKerja">00:00:00</div>
+            <div class="stat-card__label">Total Jam Kerja (Bulan Ini)</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card__top">
+              <div class="stat-card__icon stat-card__icon--amber">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="stat-card__value mono" id="dashStatTelat">0</div>
+            <div class="stat-card__label">Total Terlambat (Bulan Ini)</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card__top">
+              <div class="stat-card__icon stat-card__icon--teal">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m6 14V9m6 10V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="stat-card__value mono" id="dashStatPersentase">0%</div>
+            <div class="stat-card__label">Persentase Kehadiran</div>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel__header">
+              <div>
+                <h2>Grafik Kehadiran Mingguan</h2>
+                <div class="panel__header-sub">Senin – Minggu, minggu ini</div>
+              </div>
+            </div>
+            <div style="height:260px;">
+              <canvas id="weeklyAttendanceChart"></canvas>
+            </div>
+          </div>
+
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel__header">
+              <div>
+                <h2>Grafik Kehadiran Bulanan</h2>
+                <div class="panel__header-sub">Per minggu, bulan berjalan</div>
+              </div>
+            </div>
+            <div style="height:260px;">
+              <canvas id="monthlyAttendanceChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Grid konten: linimasa + progres -->
+      <section class="dashboard-grid">
+
+        <div class="panel">
+          <div class="panel__header">
+            <div>
+              <h2>Aktivitas Presensi Hari Ini</h2>
+              <div class="panel__header-sub">Diperbarui secara langsung</div>
+            </div>
+            <a href="riwayat.html" class="btn btn--ghost">Lihat semua</a>
+          </div>
+
+          <div class="timeline">
+            <div class="timeline__item">
+              <div class="timeline__time mono">07:52</div>
+              <div class="timeline__avatar">AS</div>
+              <div class="timeline__body">
+                <div class="timeline__name">Asep Saepudin</div>
+                <div class="timeline__meta">Melakukan check-in — Driver</div>
+              </div>
+              <span class="status-badge status-badge--hadir">Hadir</span>
+            </div>
+            <div class="timeline__item">
+              <div class="timeline__time mono">08:14</div>
+              <div class="timeline__avatar">NA</div>
+              <div class="timeline__body">
+                <div class="timeline__name">Nana Sumarna</div>
+                <div class="timeline__meta">Melakukan check-in — Staf Lapangan</div>
+              </div>
+              <span class="status-badge status-badge--telat">Telat</span>
+            </div>
+            <div class="timeline__item">
+              <div class="timeline__time mono">08:30</div>
+              <div class="timeline__avatar">RZ</div>
+              <div class="timeline__body">
+                <div class="timeline__name">Rezki Ramadhan</div>
+                <div class="timeline__meta">Mengajukan izin — Keperluan keluarga</div>
+              </div>
+              <span class="status-badge status-badge--izin">Izin</span>
+            </div>
+            <div class="timeline__item">
+              <div class="timeline__time mono">09:00</div>
+              <div class="timeline__avatar">DW</div>
+              <div class="timeline__body">
+                <div class="timeline__name">Dewi Wulandari</div>
+                <div class="timeline__meta">Belum melakukan check-in</div>
+              </div>
+              <span class="status-badge status-badge--alpha">Alpha</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel__header">
+            <div>
+              <h2>Ringkasan Minggu Ini</h2>
+              <div class="panel__header-sub">Persentase kehadiran per divisi</div>
+            </div>
+          </div>
+
+          <div class="progress-list">
+            <div class="progress-row">
+              <div class="progress-row__top"><span>Driver</span><strong class="mono">94%</strong></div>
+              <div class="progress-track"><div class="progress-fill" style="width:94%"></div></div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-row__top"><span>Staf Lapangan</span><strong class="mono">88%</strong></div>
+              <div class="progress-track"><div class="progress-fill" style="width:88%"></div></div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-row__top"><span>Operasional</span><strong class="mono">97%</strong></div>
+              <div class="progress-track"><div class="progress-fill" style="width:97%"></div></div>
+            </div>
+            <div class="progress-row">
+              <div class="progress-row__top"><span>Admin</span><strong class="mono">100%</strong></div>
+              <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/sidebar.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/local-db.js"></script>
+<script src="js/app-config.js"></script>
+<script src="js/dashboard-stats.js"></script>
+</body>
+</html>
