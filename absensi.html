@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Anti-flash: terapkan tema tersimpan SEBELUM CSS dirender,
+  // supaya halaman tidak "berkedip" terang lalu gelap.
+  (function () {
+    try {
+      var saved = localStorage.getItem("theme");
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (saved === "dark" || (!saved && prefersDark)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (e) { /* localStorage tidak tersedia — abaikan, pakai tema terang */ }
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Absensi — Absensi Karyawan</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="sidebar-backdrop" data-sidebar-close></div>
+
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <button class="sidebar__close-btn" data-sidebar-close aria-label="Tutup menu">
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-mark">RA</div>
+      <div class="sidebar__brand-text">
+        <span class="sidebar__brand-name">Recharge Absensi</span>
+        <span class="sidebar__brand-sub">Operasional Jakarta</span>
+      </div>
+    </div>
+
+    <span class="sidebar__section-label">Menu</span>
+    <nav class="nav-menu">
+      <a href="index.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="absensi.html" class="nav-menu__item is-active">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Absensi</span>
+      </a>
+      <a href="riwayat.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Riwayat</span>
+      </a>
+      <a href="profil.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Profil</span>
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar">AT</div>
+        <div>
+          <div class="sidebar__user-name">Atna</div>
+          <div class="sidebar__user-role">Staf Operasional</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN COLUMN ============ -->
+  <div class="main-col">
+
+    <div class="mobile-topbar">
+      <button class="mobile-topbar__menu-btn" data-sidebar-open aria-label="Buka menu">
+        <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="mobile-topbar__brand">Recharge Absensi</span>
+      <button class="mobile-topbar__menu-btn theme-toggle-btn" data-theme-toggle aria-label="Ganti tema">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar__title-group">
+        <h1>Absensi</h1>
+        <div class="topbar__breadcrumb">Lakukan check-in / check-out harian Anda</div>
+      </div>
+      <div class="topbar__right">
+        <div class="punch-clock">
+          <span class="punch-clock__dot"></span>
+          <span class="punch-clock__time" data-live-time>--:--:--</span>
+          <span class="punch-clock__date mono" data-live-date>-</span>
+        </div>
+        <button class="topbar__icon-btn theme-toggle-btn" data-theme-toggle aria-label="Ganti tema">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="topbar__icon-btn" aria-label="Notifikasi">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <section class="dashboard-grid">
+
+        <!-- Kartu presensi utama -->
+        <div class="check-card">
+          <span class="check-card__label">Waktu saat ini</span>
+          <span class="check-card__clock" data-live-time>--:--:--</span>
+          <span class="check-card__date" data-live-date>-</span>
+
+          <p class="check-card__hint" id="attendanceHint">Anda belum melakukan check-in hari ini.</p>
+
+          <div class="check-card__actions">
+            <button class="btn btn--primary" id="btnCheckIn" type="button">
+              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Check-in
+            </button>
+            <button class="btn btn--outline" id="btnCheckOut" type="button" disabled>
+              <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Check-out
+            </button>
+          </div>
+
+          <div class="check-card__status-row">
+            <div class="check-card__status-item">
+              <span>Check-in</span>
+              <span class="mono" id="statusCheckIn">—:—</span>
+            </div>
+            <div class="check-card__status-item">
+              <span>Check-out</span>
+              <span class="mono" id="statusCheckOut">—:—</span>
+            </div>
+            <div class="check-card__status-item">
+              <span>Total Jam Kerja</span>
+              <span class="mono" id="statusTotalHours">00:00:00</span>
+            </div>
+            <div class="check-card__status-item">
+              <span>Status</span>
+              <span id="statusLabel">Belum Hadir</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel info lokasi / shift -->
+        <div class="panel">
+          <div class="panel__header">
+            <div>
+              <h2>Detail Shift</h2>
+              <div class="panel__header-sub">Jadwal kerja hari ini</div>
+            </div>
+          </div>
+
+          <div class="profile-card__meta-list" style="border-top:none; padding-top:0;">
+            <div class="profile-card__meta-row"><span>Shift</span><span>Pagi (08:00 – 17:00)</span></div>
+            <div class="profile-card__meta-row"><span>Lokasi</span><span>Kantor Operasional Jakarta</span></div>
+            <div class="profile-card__meta-row"><span>Divisi</span><span>Operasional &amp; Logistik</span></div>
+            <div class="profile-card__meta-row"><span>Toleransi telat</span><span>15 menit</span></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Tabel presensi karyawan lain hari ini -->
+      <section class="panel">
+        <div class="panel__header">
+          <div>
+            <h2>Presensi Tim Hari Ini</h2>
+            <div class="panel__header-sub">Semua karyawan pada shift aktif</div>
+          </div>
+          <div class="toolbar">
+            <div class="input-search">
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <input type="text" placeholder="Cari nama karyawan...">
+            </div>
+            <select class="select-filter">
+              <option>Semua status</option>
+              <option>Hadir</option>
+              <option>Telat</option>
+              <option>Izin</option>
+              <option>Alpha</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Karyawan</th>
+                <th>Check-in</th>
+                <th>Check-out</th>
+                <th>Divisi</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="cell-employee">
+                    <div class="table-avatar">AS</div>
+                    <div>
+                      <div class="employee-name">Asep Saepudin</div>
+                      <div class="employee-role">Driver</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="cell-time mono">07:52</td>
+                <td class="cell-time mono">—:—</td>
+                <td>Operasional</td>
+                <td><span class="status-badge status-badge--hadir">Hadir</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="cell-employee">
+                    <div class="table-avatar">NA</div>
+                    <div>
+                      <div class="employee-name">Nana Sumarna</div>
+                      <div class="employee-role">Staf Lapangan</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="cell-time mono">08:14</td>
+                <td class="cell-time mono">—:—</td>
+                <td>Operasional</td>
+                <td><span class="status-badge status-badge--telat">Telat</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="cell-employee">
+                    <div class="table-avatar">RZ</div>
+                    <div>
+                      <div class="employee-name">Rezki Ramadhan</div>
+                      <div class="employee-role">Staf Lapangan</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="cell-time mono">—:—</td>
+                <td class="cell-time mono">—:—</td>
+                <td>Operasional</td>
+                <td><span class="status-badge status-badge--izin">Izin</span></td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="cell-employee">
+                    <div class="table-avatar">DW</div>
+                    <div>
+                      <div class="employee-name">Dewi Wulandari</div>
+                      <div class="employee-role">Admin</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="cell-time mono">—:—</td>
+                <td class="cell-time mono">—:—</td>
+                <td>Administrasi</td>
+                <td><span class="status-badge status-badge--alpha">Alpha</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/core.js"></script>
+<script src="js/attendance.js"></script>
+</body>
+</html>
