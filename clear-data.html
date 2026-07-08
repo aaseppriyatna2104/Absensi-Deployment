@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hapus Data Demo - Absensi Karyawan</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    margin: 0;
+    background: #f8fafc;
+  }
+  .container {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+    max-width: 400px;
+    text-align: center;
+  }
+  h1 {
+    margin: 0 0 1rem 0;
+    color: #1e293b;
+  }
+  p {
+    color: #64748b;
+    margin-bottom: 1.5rem;
+  }
+  button {
+    background: #D9534F;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    width: 100%;
+  }
+  button:hover {
+    background: #c9302c;
+  }
+  .success {
+    background: #2E9678;
+  }
+  .success:hover {
+    background: #1F7A64;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Hapus Data Demo</h1>
+  <p>Halaman ini akan menghapus semua data presensi, profil, dan sesi dari localStorage.</p>
+  <button id="btnClear">Hapus Semua Data</button>
+  <div id="result" style="margin-top: 1rem; display: none;"></div>
+</div>
+
+<script>
+  document.getElementById('btnClear').addEventListener('click', function() {
+    // Hapus semua data terkait aplikasi
+    const keysToRemove = [];
+    
+    // Cari semua key yang berawalan dengan prefix aplikasi
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('localdb:') || key.startsWith('profile_') || 
+          key === 'session_user' || key === 'theme') {
+        keysToRemove.push(key);
+      }
+    }
+    
+    // Hapus semua key yang ditemukan
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Update UI
+    const btn = document.getElementById('btnClear');
+    const result = document.getElementById('result');
+    
+    btn.textContent = 'Data Berhasil Dihapus!';
+    btn.className = 'success';
+    btn.disabled = true;
+    
+    result.style.display = 'block';
+    result.innerHTML = `<p style="color: #2E9678; font-weight: 500;">${keysToRemove.length} data telah dihapus.</p>
+                       <p style="font-size: 0.875rem; margin-top: 0.5rem;">Silakan tutup halaman ini dan kembali ke <a href="login.html">login.html</a></p>`;
+  });
+</script>
+</body>
+</html>

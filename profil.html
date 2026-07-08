@@ -15,6 +15,21 @@
     } catch (e) { /* localStorage tidak tersedia — abaikan, pakai tema terang */ }
   })();
 </script>
+
+<script>
+  // Guard login: kalau belum ada sesi, langsung lempar ke halaman
+  // login SEBELUM konten halaman ini sempat dirender/terlihat.
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (!session || !session.username) {
+        window.location.replace("login.html");
+      }
+    } catch (e) {
+      window.location.replace("login.html");
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Profil — Absensi Karyawan</title>
 
@@ -65,11 +80,14 @@
 
     <div class="sidebar__footer">
       <div class="sidebar__user">
-        <div class="sidebar__avatar">AT</div>
+        <div class="sidebar__avatar" data-session-avatar>--</div>
         <div>
-          <div class="sidebar__user-name">Atna</div>
-          <div class="sidebar__user-role">Staf Operasional</div>
+          <div class="sidebar__user-name" data-session-name>...</div>
+          <div class="sidebar__user-role" data-session-role>...</div>
         </div>
+        <button class="sidebar__logout-btn" data-logout aria-label="Keluar" title="Keluar">
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -91,7 +109,7 @@
     <header class="topbar">
       <div class="topbar__title-group">
         <h1>Profil</h1>
-        <div class="topbar__breadcrumb">Kelola data diri dan preferensi akun</div>
+        <div class="topbar__breadcrumb">Kelola data diri Anda</div>
       </div>
       <div class="topbar__right">
         <div class="punch-clock">
@@ -111,93 +129,90 @@
 
     <main class="content">
 
-      <section class="profile-grid">
+      <div class="dashboard-grid">
+        
+        <!-- Kartu Profil -->
+        <div class="panel">
+          <div class="panel__header">
+            <div>
+              <h2>Identitas Karyawan</h2>
+              <div class="panel__header-sub">Informasi akun Anda</div>
+            </div>
+          </div>
 
-        <!-- Kartu identitas -->
-        <div class="profile-card">
-          <div class="profile-card__avatar">AT</div>
-          <h2 class="profile-card__name">Atna</h2>
-          <div class="profile-card__role">Staf Operasional — Recharge Indonesia</div>
-          <div class="profile-card__id-badge mono">ID KARYAWAN · RCG-0142</div>
+          <div style="display: flex; align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-6);">
+            <div id="profileAvatar" style="width: 80px; height: 80px; background: var(--color-teal-500); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xl); color: var(--color-navy-900);">--</div>
+            <div>
+              <div id="profileName" style="font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg); margin-bottom: var(--sp-1);">...</div>
+              <div id="profileRole" style="font-size: var(--fs-sm); color: var(--color-text-muted);">...</div>
+              <div id="profileUsername" style="font-size: var(--fs-xs); color: var(--color-text-faint); margin-top: var(--sp-1);">...</div>
+            </div>
+          </div>
 
-          <div class="profile-card__meta-list">
-            <div class="profile-card__meta-row"><span>Divisi</span><span>Operasional &amp; Logistik</span></div>
-            <div class="profile-card__meta-row"><span>Lokasi</span><span>Jakarta</span></div>
-            <div class="profile-card__meta-row"><span>Bergabung</span><span>12 Feb 2024</span></div>
-            <div class="profile-card__meta-row"><span>Atasan</span><span>Budi Hartono</span></div>
+          <div style="padding: var(--sp-4); background: var(--color-surface-alt); border-radius: var(--radius-md);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--sp-3);">
+              <span style="font-size: var(--fs-sm); color: var(--color-text-muted);">Username</span>
+              <span id="infoUsername" class="mono" style="font-size: var(--fs-sm);">...</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: var(--sp-3);">
+              <span style="font-size: var(--fs-sm); color: var(--color-text-muted);">Role</span>
+              <span id="infoRole" style="font-size: var(--fs-sm); font-weight: 500;">...</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+              <span style="font-size: var(--fs-sm); color: var(--color-text-muted);">Status Akun</span>
+              <span class="status-badge status-badge--hadir">Aktif</span>
+            </div>
           </div>
         </div>
 
-        <!-- Detail & form (tervalidasi lewat js/validation.js) -->
-        <div class="panel" style="margin-bottom:0;">
-          <div class="tab-row">
-            <span class="tab-item is-active">Data Diri</span>
-            <span class="tab-item">Keamanan</span>
-            <span class="tab-item">Preferensi</span>
+        <!-- Form Data Diri -->
+        <div class="panel">
+          <div class="panel__header">
+            <div>
+              <h2>Data Diri</h2>
+              <div class="panel__header-sub">Perbarui informasi pribadi</div>
+            </div>
           </div>
 
-          <form id="profilForm" novalidate>
-            <div class="form-grid">
-              <div class="form-field" data-field="nama">
-                <label for="inputNama">Nama Lengkap</label>
-                <input type="text" id="inputNama" name="nama" value="Atna" required minlength="2">
-                <span class="form-field__error">Nama minimal 2 karakter.</span>
-              </div>
-
-              <div class="form-field">
-                <label for="inputIdKaryawan">ID Karyawan</label>
-                <input type="text" id="inputIdKaryawan" value="RCG-0142" disabled>
-              </div>
-
-              <div class="form-field" data-field="email">
-                <label for="inputEmail">Email</label>
-                <input type="email" id="inputEmail" name="email" value="atna@rechargeindonesia.co.id" required>
-                <span class="form-field__error">Masukkan alamat email yang valid.</span>
-              </div>
-
-              <div class="form-field" data-field="telepon">
-                <label for="inputTelepon">Nomor Telepon</label>
-                <input type="text" id="inputTelepon" name="telepon" value="+62 812-3456-7890" required>
-                <span class="form-field__error">Gunakan format nomor telepon Indonesia yang valid.</span>
-              </div>
-
-              <div class="form-field">
-                <label for="selectDivisi">Divisi</label>
-                <select id="selectDivisi" name="divisi">
-                  <option selected>Operasional &amp; Logistik</option>
-                  <option>Administrasi</option>
-                  <option>Driver</option>
-                </select>
-              </div>
-
-              <div class="form-field">
-                <label for="selectLokasi">Lokasi Kerja</label>
-                <select id="selectLokasi" name="lokasi">
-                  <option selected>Kantor Operasional Jakarta</option>
-                  <option>Gudang Cikarang</option>
-                </select>
-              </div>
-
-              <div class="form-field form-field--full" data-field="alamat">
-                <label for="inputAlamat">Alamat</label>
-                <input type="text" id="inputAlamat" name="alamat" value="Jl. Kemang Raya No. 12, Jakarta Selatan" required minlength="5">
-                <span class="form-field__error">Alamat minimal 5 karakter.</span>
-              </div>
+          <form id="profileForm" novalidate>
+            <div class="form-field" data-field="nama">
+              <label for="inputNama">Nama Lengkap</label>
+              <input type="text" id="inputNama" name="nama" placeholder="Masukkan nama lengkap" required>
+              <span class="form-field__error">Nama lengkap wajib diisi.</span>
             </div>
 
-            <div style="display:flex; justify-content:flex-end; gap:var(--sp-3); margin-top:var(--sp-6);">
-              <button type="reset" class="btn btn--outline" id="btnBatal">Batal</button>
-              <button type="submit" class="btn btn--primary" id="btnSimpanProfil">Simpan Perubahan</button>
+            <div class="form-field" data-field="email">
+              <label for="inputEmail">Email</label>
+              <input type="email" id="inputEmail" name="email" placeholder="contoh@email.com" required>
+              <span class="form-field__error">Email tidak valid.</span>
             </div>
+
+            <div class="form-field" data-field="telepon">
+              <label for="inputTelepon">Nomor Telepon</label>
+              <input type="tel" id="inputTelepon" name="telepon" placeholder="08xxxxxxxxxx" required>
+              <span class="form-field__error">Nomor telepon wajib diisi.</span>
+            </div>
+
+            <div class="form-field" data-field="alamat">
+              <label for="inputAlamat">Alamat</label>
+              <input type="text" id="inputAlamat" name="alamat" placeholder="Masukkan alamat lengkap" required>
+              <span class="form-field__error">Alamat wajib diisi.</span>
+            </div>
+
+            <button type="submit" class="btn btn--primary" id="btnSaveProfile" style="width: 100%; margin-top: var(--sp-4);">
+              <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 21v-8H7v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 3v5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Simpan Perubahan
+            </button>
           </form>
         </div>
 
-      </section>
+      </div>
 
     </main>
   </div>
 </div>
 
+<script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/validation.js"></script>
 </body>

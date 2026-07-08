@@ -130,16 +130,15 @@
 
     <main class="content">
 
-      <!-- Kartu ringkasan -->
+      <!-- Kartu ringkasan hari ini (dinamis) -->
       <section class="stat-grid">
         <div class="stat-card">
           <div class="stat-card__top">
             <div class="stat-card__icon stat-card__icon--teal">
               <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <span class="stat-card__delta stat-card__delta--up">+2</span>
           </div>
-          <div class="stat-card__value mono">42</div>
+          <div class="stat-card__value mono" id="todayHadir">0</div>
           <div class="stat-card__label">Hadir hari ini</div>
         </div>
 
@@ -148,21 +147,19 @@
             <div class="stat-card__icon stat-card__icon--amber">
               <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <span class="stat-card__delta stat-card__delta--down">-1</span>
           </div>
-          <div class="stat-card__value mono">5</div>
-          <div class="stat-card__label">Terlambat</div>
+          <div class="stat-card__value mono" id="todayTelat">0</div>
+          <div class="stat-card__label">Terlambat hari ini</div>
         </div>
 
         <div class="stat-card">
           <div class="stat-card__top">
             <div class="stat-card__icon stat-card__icon--blue">
-              <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="2"/><path d="M3 10h18M8 3v4M16 3v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
             </div>
-            <span class="stat-card__delta stat-card__delta--up">+1</span>
           </div>
-          <div class="stat-card__value mono">3</div>
-          <div class="stat-card__label">Izin / Cuti</div>
+          <div class="stat-card__value mono" id="todayJamKerja">00:00:00</div>
+          <div class="stat-card__label">Total jam kerja hari ini</div>
         </div>
 
         <div class="stat-card">
@@ -170,10 +167,9 @@
             <div class="stat-card__icon stat-card__icon--red">
               <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
             </div>
-            <span class="stat-card__delta stat-card__delta--down">0</span>
           </div>
-          <div class="stat-card__value mono">2</div>
-          <div class="stat-card__label">Alpha</div>
+          <div class="stat-card__value mono" id="todayAlpha">0</div>
+          <div class="stat-card__label">Alpha hari ini</div>
         </div>
       </section>
 

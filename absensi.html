@@ -15,6 +15,21 @@
     } catch (e) { /* localStorage tidak tersedia — abaikan, pakai tema terang */ }
   })();
 </script>
+
+<script>
+  // Guard login: kalau belum ada sesi, langsung lempar ke halaman
+  // login SEBELUM konten halaman ini sempat dirender/terlihat.
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (!session || !session.username) {
+        window.location.replace("login.html");
+      }
+    } catch (e) {
+      window.location.replace("login.html");
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Absensi — Absensi Karyawan</title>
 
@@ -65,11 +80,14 @@
 
     <div class="sidebar__footer">
       <div class="sidebar__user">
-        <div class="sidebar__avatar">AT</div>
+        <div class="sidebar__avatar" data-session-avatar>--</div>
         <div>
-          <div class="sidebar__user-name">Atna</div>
-          <div class="sidebar__user-role">Staf Operasional</div>
+          <div class="sidebar__user-name" data-session-name>...</div>
+          <div class="sidebar__user-role" data-session-role>...</div>
         </div>
+        <button class="sidebar__logout-btn" data-logout aria-label="Keluar" title="Keluar">
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -91,7 +109,7 @@
     <header class="topbar">
       <div class="topbar__title-group">
         <h1>Absensi</h1>
-        <div class="topbar__breadcrumb">Lakukan check-in / check-out harian Anda</div>
+        <div class="topbar__breadcrumb">Catat kehadiran Anda hari ini</div>
       </div>
       <div class="topbar__right">
         <div class="punch-clock">
@@ -111,162 +129,69 @@
 
     <main class="content">
 
-      <section class="dashboard-grid">
-
-        <!-- Kartu presensi utama -->
-        <div class="check-card">
-          <span class="check-card__label">Waktu saat ini</span>
-          <span class="check-card__clock" data-live-time>--:--:--</span>
-          <span class="check-card__date" data-live-date>-</span>
-
-          <p class="check-card__hint" id="attendanceHint">Anda belum melakukan check-in hari ini.</p>
-
-          <div class="check-card__actions">
-            <button class="btn btn--primary" id="btnCheckIn" type="button">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Check-in
-            </button>
-            <button class="btn btn--outline" id="btnCheckOut" type="button" disabled>
-              <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Check-out
-            </button>
-          </div>
-
-          <div class="check-card__status-row">
-            <div class="check-card__status-item">
-              <span>Check-in</span>
-              <span class="mono" id="statusCheckIn">—:—</span>
-            </div>
-            <div class="check-card__status-item">
-              <span>Check-out</span>
-              <span class="mono" id="statusCheckOut">—:—</span>
-            </div>
-            <div class="check-card__status-item">
-              <span>Total Jam Kerja</span>
-              <span class="mono" id="statusTotalHours">00:00:00</span>
-            </div>
-            <div class="check-card__status-item">
-              <span>Status</span>
-              <span id="statusLabel">Belum Hadir</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Panel info lokasi / shift -->
-        <div class="panel">
-          <div class="panel__header">
-            <div>
-              <h2>Detail Shift</h2>
-              <div class="panel__header-sub">Jadwal kerja hari ini</div>
-            </div>
-          </div>
-
-          <div class="profile-card__meta-list" style="border-top:none; padding-top:0;">
-            <div class="profile-card__meta-row"><span>Shift</span><span>Pagi (08:00 – 17:00)</span></div>
-            <div class="profile-card__meta-row"><span>Lokasi</span><span>Kantor Operasional Jakarta</span></div>
-            <div class="profile-card__meta-row"><span>Divisi</span><span>Operasional &amp; Logistik</span></div>
-            <div class="profile-card__meta-row"><span>Toleransi telat</span><span>15 menit</span></div>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- Tabel presensi karyawan lain hari ini -->
-      <section class="panel">
+      <!-- Kartu Absensi -->
+      <section class="panel" style="max-width: 600px; margin: 0 auto;">
         <div class="panel__header">
           <div>
-            <h2>Presensi Tim Hari Ini</h2>
-            <div class="panel__header-sub">Semua karyawan pada shift aktif</div>
-          </div>
-          <div class="toolbar">
-            <div class="input-search">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              <input type="text" placeholder="Cari nama karyawan...">
-            </div>
-            <select class="select-filter">
-              <option>Semua status</option>
-              <option>Hadir</option>
-              <option>Telat</option>
-              <option>Izin</option>
-              <option>Alpha</option>
-            </select>
+            <h2>Catat Presensi</h2>
+            <div class="panel__header-sub" id="attendanceDateLabel">Memuat tanggal...</div>
           </div>
         </div>
 
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Karyawan</th>
-                <th>Check-in</th>
-                <th>Check-out</th>
-                <th>Divisi</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>
-                  <div class="cell-employee">
-                    <div class="table-avatar">AS</div>
-                    <div>
-                      <div class="employee-name">Asep Saepudin</div>
-                      <div class="employee-role">Driver</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="cell-time mono">07:52</td>
-                <td class="cell-time mono">—:—</td>
-                <td>Operasional</td>
-                <td><span class="status-badge status-badge--hadir">Hadir</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="cell-employee">
-                    <div class="table-avatar">NA</div>
-                    <div>
-                      <div class="employee-name">Nana Sumarna</div>
-                      <div class="employee-role">Staf Lapangan</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="cell-time mono">08:14</td>
-                <td class="cell-time mono">—:—</td>
-                <td>Operasional</td>
-                <td><span class="status-badge status-badge--telat">Telat</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="cell-employee">
-                    <div class="table-avatar">RZ</div>
-                    <div>
-                      <div class="employee-name">Rezki Ramadhan</div>
-                      <div class="employee-role">Staf Lapangan</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="cell-time mono">—:—</td>
-                <td class="cell-time mono">—:—</td>
-                <td>Operasional</td>
-                <td><span class="status-badge status-badge--izin">Izin</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="cell-employee">
-                    <div class="table-avatar">DW</div>
-                    <div>
-                      <div class="employee-name">Dewi Wulandari</div>
-                      <div class="employee-role">Admin</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="cell-time mono">—:—</td>
-                <td class="cell-time mono">—:—</td>
-                <td>Administrasi</td>
-                <td><span class="status-badge status-badge--alpha">Alpha</span></td>
-              </tr>
-            </tbody>
-          </table>
+        <div style="display: flex; flex-direction: column; gap: var(--sp-6);">
+          
+          <!-- Status Check-in -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--sp-4); background: var(--color-surface-alt); border-radius: var(--radius-md);">
+            <div>
+              <div style="font-size: var(--fs-sm); color: var(--color-text-muted); margin-bottom: var(--sp-1);">Status Check-in</div>
+              <div id="checkInStatus" style="font-weight: 600;">Belum check-in</div>
+            </div>
+            <div id="checkInTime" class="mono" style="font-size: var(--fs-lg); color: var(--color-teal-500);">--:--:--</div>
+          </div>
+
+          <!-- Status Check-out -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--sp-4); background: var(--color-surface-alt); border-radius: var(--radius-md);">
+            <div>
+              <div style="font-size: var(--fs-sm); color: var(--color-text-muted); margin-bottom: var(--sp-1);">Status Check-out</div>
+              <div id="checkOutStatus" style="font-weight: 600;">Belum check-out</div>
+            </div>
+            <div id="checkOutTime" class="mono" style="font-size: var(--fs-lg); color: var(--color-teal-500);">--:--:--</div>
+          </div>
+
+          <!-- Total Jam Kerja -->
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: var(--sp-4); background: var(--color-surface-alt); border-radius: var(--radius-md);">
+            <div>
+              <div style="font-size: var(--fs-sm); color: var(--color-text-muted); margin-bottom: var(--sp-1);">Total Jam Kerja</div>
+              <div id="workStatus" style="font-weight: 600;">Belum bekerja</div>
+            </div>
+            <div id="totalWorkTime" class="mono" style="font-size: var(--fs-xl); color: var(--color-navy-700);">00:00:00</div>
+          </div>
+
+          <!-- Tombol Aksi -->
+          <div style="display: flex; gap: var(--sp-4);">
+            <button id="btnCheckIn" class="btn btn--primary" style="flex: 1; padding: var(--sp-5);">
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Check In
+            </button>
+            <button id="btnCheckOut" class="btn btn--primary" style="flex: 1; padding: var(--sp-5);" disabled>
+              <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Check Out
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Info Tambahan -->
+      <section class="panel" style="max-width: 600px; margin: var(--sp-6) auto 0;">
+        <div style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.7;">
+          <strong>Catatan:</strong>
+          <ul style="padding-left: var(--sp-5); margin-top: var(--sp-2);">
+            <li>Check-in sebelum jam 08:15 dianggap Hadir</li>
+            <li>Check-in setelah jam 08:15 dianggap Terlambat</li>
+            <li>Tidak ada check-in di hari kerja dianggap Alpha</li>
+            <li>Data tersimpan otomatis di browser</li>
+          </ul>
         </div>
       </section>
 
@@ -274,6 +199,7 @@
   </div>
 </div>
 
+<script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/attendance.js"></script>
 </body>
