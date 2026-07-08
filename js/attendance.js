@@ -1,257 +1,256 @@
 /* =========================================================
-   ATTENDANCE — logika Check-in / Check-out harian
-
-   Disimpan lewat "db" yang didefinisikan di js/local-db.js —
-   sebuah polyfill yang bentuk pemanggilannya (collection/doc/
-   set/onSnapshot) sengaja dibuat MIRIP Firebase Firestore.
-   Jadi kalau nanti project ini dihubungkan ke Firebase asli,
-   file ini TIDAK PERLU diubah — cukup ganti local-db.js dengan
-   SDK Firebase + firebase-config.js yang menginisialisasi
-   variabel global "db" yang sama.
-
-   Struktur data (collection "attendance"):
-   collection("attendance")
-     └── document("{employeeId}_{YYYY-MM-DD}")
-           ├── nama            : string
-           ├── tanggal         : string  "YYYY-MM-DD"
-           ├── checkIn         : string ISO datetime | null
-           ├── checkOut        : string ISO datetime | null
-           ├── totalJamKerjaDetik : number (detik)
-           └── status          : "hadir" | "telat" | "belum"
+   ATTENDANCE — logika Check-in / Check-out halaman Absensi.
+   
+   Menggunakan "db" (js/core.js) yang meniru API Firebase
+   Firestore. Data disimpan per tanggal & per karyawan.
    ========================================================= */
 
 (function () {
-  const LATE_THRESHOLD_MINUTES = 8 * 60 + 15; // 08:15
-
-  /**
-   * Membentuk string tanggal hari ini dalam format "YYYY-MM-DD",
-   * dipakai sebagai bagian dari ID record harian.
-   * @returns {string}
-   */
-  function todayDateStr() {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, "0");
-    const d = String(now.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-
-  /**
-   * Membentuk ID record presensi dari ID karyawan + tanggal,
-   * contoh: "atna_2026-07-06".
-   * @param {string} dateStr - tanggal format "YYYY-MM-DD"
-   * @returns {string}
-   */
-  function docId(dateStr) {
-    return `${CURRENT_EMPLOYEE.id}_${dateStr}`;
-  }
-
-  /**
-   * Memformat objek Date menjadi jam "HH:MM:SS".
-   * @param {Date} date
-   * @returns {string}
-   */
+  const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+  const MONTH_NAMES = [
+    "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+    "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+  ];
+  
+  // Batas waktu untuk dianggap hadir (08:15)
+  const LATE_THRESHOLD_HOUR = 8;
+  const LATE_THRESHOLD_MINUTE = 15;
+  
+  /** Menambahkan angka nol di depan kalau kurang dari 2 digit. @param {number} n @returns {string} */
+  function pad(n) { return String(n).padStart(2, "0"); }
+  
+  /** Memformat objek Date menjadi jam "HH:MM:SS". @param {Date} date @returns {string} */
   function formatClock(date) {
-    const p = (n) => String(n).padStart(2, "0");
-    return `${p(date.getHours())}:${p(date.getMinutes())}:${p(date.getSeconds())}`;
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
   }
-
-  /**
-   * Memformat durasi dalam detik menjadi "HH:MM:SS".
-   * @param {number} seconds
-   * @returns {string}
-   */
+  
+  /** Memformat objek Date menjadi "DD Month YYYY". @param {Date} date @returns {string} */
+  function formatDate(date) {
+    return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+  }
+  
+  /** Memformat durasi dalam detik menjadi "HH:MM:SS". @param {number} seconds @returns {string} */
   function formatDuration(seconds) {
     const total = Math.max(0, Math.floor(seconds));
-    const h = String(Math.floor(total / 3600)).padStart(2, "0");
-    const m = String(Math.floor((total % 3600) / 60)).padStart(2, "0");
-    const s = String(total % 60).padStart(2, "0");
+    const h = pad(Math.floor(total / 3600));
+    const m = pad(Math.floor((total % 3600) / 60));
+    const s = pad(total % 60);
     return `${h}:${m}:${s}`;
   }
-
-  /**
-   * Menentukan status kehadiran ("hadir"/"telat") berdasarkan
-   * jam check-in, dibandingkan dengan batas toleransi 08:15.
-   * @param {Date} checkInDate
-   * @returns {"hadir"|"telat"}
-   */
-  function computeStatus(checkInDate) {
-    const minutes = checkInDate.getHours() * 60 + checkInDate.getMinutes();
-    return minutes > LATE_THRESHOLD_MINUTES ? "telat" : "hadir";
+  
+  /** Mengembalikan tanggal (jam di-nol-kan) dari sebuah Date. @param {Date} date @returns {Date} */
+  function startOfDay(date) {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
   }
-
-  document.addEventListener("DOMContentLoaded", () => {
+  
+  /** Mengembalikan tanggal hari ini dalam format "YYYY-MM-DD". @returns {string} */
+  function getTodayString() {
+    const today = new Date();
+    return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  }
+  
+  /** Menentukan status berdasarkan jam check-in. @param {Date} checkInTime @returns {"hadir"|"telat"} */
+  function determineStatus(checkInTime) {
+    const hour = checkInTime.getHours();
+    const minute = checkInTime.getMinutes();
+    
+    if (hour < LATE_THRESHOLD_HOUR) return "hadir";
+    if (hour === LATE_THRESHOLD_HOUR && minute <= LATE_THRESHOLD_MINUTE) return "hadir";
+    return "telat";
+  }
+  
+  /** ID record untuk hari ini: "{username}_{YYYY-MM-DD}" */
+  function getTodayRecordId() {
+    return `${CURRENT_EMPLOYEE.id}_${getTodayString()}`;
+  }
+  
+  /** Update tampilan UI berdasarkan data attendance. @param {object|null} data */
+  function updateUI(data) {
+    const today = new Date();
+    const dateLabel = document.getElementById("attendanceDateLabel");
+    const checkInStatus = document.getElementById("checkInStatus");
+    const checkInTime = document.getElementById("checkInTime");
+    const checkOutStatus = document.getElementById("checkOutStatus");
+    const checkOutTime = document.getElementById("checkOutTime");
+    const workStatus = document.getElementById("workStatus");
+    const totalWorkTime = document.getElementById("totalWorkTime");
     const btnCheckIn = document.getElementById("btnCheckIn");
     const btnCheckOut = document.getElementById("btnCheckOut");
-    const elCheckIn = document.getElementById("statusCheckIn");
-    const elCheckOut = document.getElementById("statusCheckOut");
-    const elTotalHours = document.getElementById("statusTotalHours");
-    const elStatusLabel = document.getElementById("statusLabel");
-    const elHint = document.getElementById("attendanceHint");
-
-    if (!btnCheckIn || !btnCheckOut) return; // bukan halaman Absensi
-    if (typeof db === "undefined") {
-      elHint.textContent = "Gagal memuat modul penyimpanan (js/local-db.js).";
+    
+    // Update label tanggal
+    if (dateLabel) {
+      dateLabel.textContent = `${DAY_NAMES[today.getDay()]}, ${formatDate(today)}`;
+    }
+    
+    if (!data || !data.checkIn) {
+      // Belum check-in
+      checkInStatus.textContent = "Belum check-in";
+      checkInTime.textContent = "--:--:--";
+      checkOutStatus.textContent = "Belum check-out";
+      checkOutTime.textContent = "--:--:--";
+      workStatus.textContent = "Belum bekerja";
+      totalWorkTime.textContent = "00:00:00";
+      
+      btnCheckIn.disabled = false;
+      btnCheckOut.disabled = true;
       return;
     }
-
-    const dateStr = todayDateStr();
-    const ref = db.collection("attendance").doc(docId(dateStr));
-
-    /** @type {{checkIn: string|null, checkOut: string|null, totalJamKerjaDetik: number, status: string}} */
-    let record = { checkIn: null, checkOut: null, totalJamKerjaDetik: 0, status: "belum" };
-    let liveTimer = null;
-
-    /**
-     * Menggambar ulang seluruh tampilan kartu presensi berdasarkan
-     * isi variabel `record` saat ini: jam check-in/out, label status,
-     * pesan bantuan, serta status disabled kedua tombol.
-     */
-    function render() {
-      elCheckIn.textContent = record.checkIn ? formatClock(new Date(record.checkIn)) : "—:—";
-      elCheckOut.textContent = record.checkOut ? formatClock(new Date(record.checkOut)) : "—:—";
-
-      btnCheckIn.disabled = !!record.checkIn;
-      btnCheckOut.disabled = !record.checkIn || !!record.checkOut;
-
-      if (!record.checkIn) {
-        elStatusLabel.textContent = "Belum Hadir";
-        elHint.textContent = "Anda belum melakukan check-in hari ini.";
-      } else if (!record.checkOut) {
-        elStatusLabel.textContent = record.status === "telat" ? "Sedang Bekerja (Telat)" : "Sedang Bekerja";
-        elHint.textContent = "Check-in tersimpan. Jangan lupa check-out setelah selesai kerja.";
-      } else {
-        elStatusLabel.textContent = "Selesai";
-        elHint.textContent = "Data presensi hari ini sudah tersimpan lengkap.";
-      }
-
-      updateTotalHoursDisplay();
-    }
-
-    /**
-     * Memperbarui angka Total Jam Kerja: kalau sudah check-out,
-     * tampilkan nilai final; kalau masih bekerja, hitung selisih
-     * dari check-in sampai waktu sekarang (berjalan tiap detik).
-     */
-    function updateTotalHoursDisplay() {
-      if (record.checkIn && record.checkOut) {
-        elTotalHours.textContent = formatDuration(record.totalJamKerjaDetik);
-      } else if (record.checkIn && !record.checkOut) {
-        const diffSeconds = (Date.now() - new Date(record.checkIn).getTime()) / 1000;
-        elTotalHours.textContent = formatDuration(diffSeconds);
-      } else {
-        elTotalHours.textContent = "00:00:00";
+    
+    const checkInDate = new Date(data.checkIn);
+    checkInStatus.textContent = data.status === "telat" ? "Terlambat" : "Hadir";
+    checkInTime.textContent = formatClock(checkInDate);
+    
+    if (!data.checkOut) {
+      // Sudah check-in, belum check-out
+      checkOutStatus.textContent = "Sedang bekerja";
+      checkOutTime.textContent = "--:--:--";
+      workStatus.textContent = "Sedang bekerja";
+      
+      // Hitung durasi real-time
+      updateWorkDuration(checkInDate);
+      
+      btnCheckIn.disabled = true;
+      btnCheckOut.disabled = false;
+    } else {
+      // Sudah check-out
+      const checkOutDate = new Date(data.checkOut);
+      checkOutStatus.textContent = "Selesai bekerja";
+      checkOutTime.textContent = formatClock(checkOutDate);
+      workStatus.textContent = "Selesai bekerja";
+      totalWorkTime.textContent = formatDuration(data.totalJamKerjaDetik || 0);
+      
+      btnCheckIn.disabled = true;
+      btnCheckOut.disabled = true;
+      
+      // Stop timer jika ada
+      if (window.workTimer) {
+        clearInterval(window.workTimer);
+        window.workTimer = null;
       }
     }
-
-    /**
-     * Menyalakan timer yang memanggil updateTotalHoursDisplay()
-     * setiap detik, dipakai selagi status "Sedang Bekerja".
-     */
-    function startLiveTimer() {
-      stopLiveTimer();
-      liveTimer = setInterval(updateTotalHoursDisplay, 1000);
+  }
+  
+  /** Update durasi kerja real-time. @param {Date} checkInDate */
+  function updateWorkDuration(checkInDate) {
+    const totalWorkTime = document.getElementById("totalWorkTime");
+    
+    // Clear timer yang lama jika ada
+    if (window.workTimer) {
+      clearInterval(window.workTimer);
     }
-
-    /**
-     * Menghentikan timer jam berjalan (dipanggil saat check-out
-     * atau saat data di-render ulang dari awal).
-     */
-    function stopLiveTimer() {
-      if (liveTimer) {
-        clearInterval(liveTimer);
-        liveTimer = null;
-      }
-    }
-
-    // Dengar perubahan record secara real-time — kalau data berubah
-    // dari tab/perangkat lain, tampilan di sini otomatis ikut update.
-    ref.onSnapshot((snap) => {
-      if (snap.exists) {
-        const data = snap.data();
-        record = {
-          checkIn: data.checkIn || null,
-          checkOut: data.checkOut || null,
-          totalJamKerjaDetik: data.totalJamKerjaDetik || 0,
-          status: data.status || "belum",
-        };
-      } else {
-        record = { checkIn: null, checkOut: null, totalJamKerjaDetik: 0, status: "belum" };
-      }
-
-      render();
-      stopLiveTimer();
-      if (record.checkIn && !record.checkOut) startLiveTimer();
-    }, (err) => {
-      console.error("Gagal memuat data presensi:", err);
-      elHint.textContent = "Gagal memuat data presensi dari penyimpanan lokal.";
-      window.showToast("Gagal memuat data presensi.", "error");
-    });
-
-    /**
-     * Handler tombol Check-in: mencegah klik ganda di hari yang
-     * sama, menyimpan jam saat ini + status (hadir/telat), lalu
-     * menampilkan toast hasilnya.
-     */
-    btnCheckIn.addEventListener("click", async () => {
-      if (record.checkIn) return; // sudah check-in hari ini — kunci
-
-      window.setButtonLoading(btnCheckIn, true, "Menyimpan...");
-
+    
+    function tick() {
       const now = new Date();
-      const status = computeStatus(now);
-      const payload = {
+      const diff = Math.floor((now - checkInDate) / 1000);
+      totalWorkTime.textContent = formatDuration(diff);
+    }
+    
+    tick();
+    window.workTimer = setInterval(tick, 1000);
+  }
+  
+  /** Handle Check-in */
+  async function handleCheckIn() {
+    const btn = document.getElementById("btnCheckIn");
+    if (!btn || btn.disabled) return;
+    
+    window.setButtonLoading(btn, true, "Mencatat...");
+    
+    try {
+      const now = new Date();
+      const todayString = getTodayString();
+      const recordId = getTodayRecordId();
+      const status = determineStatus(now);
+      
+      const data = {
         nama: CURRENT_EMPLOYEE.nama,
-        tanggal: dateStr,
+        tanggal: todayString,
         checkIn: now.toISOString(),
         checkOut: null,
         totalJamKerjaDetik: 0,
-        status,
+        status: status
       };
-
-      try {
-        await ref.set(payload, { merge: true });
-        window.showToast(
-          status === "telat" ? "Check-in berhasil (tercatat telat)." : "Check-in berhasil.",
-          status === "telat" ? "warning" : "success"
-        );
-      } catch (err) {
-        console.error("Gagal menyimpan check-in:", err);
-        elHint.textContent = "Gagal menyimpan check-in. Coba lagi.";
-        window.showToast("Gagal menyimpan check-in. Coba lagi.", "error");
-      } finally {
-        window.setButtonLoading(btnCheckIn, false);
-        render(); // onSnapshot juga akan render, ini jaga-jaga kalau event tertunda
-      }
-    });
-
-    /**
-     * Handler tombol Check-out: hanya berjalan kalau sudah check-in
-     * dan belum check-out, menghitung total jam kerja, lalu
-     * menyimpannya dan menampilkan toast hasilnya.
-     */
-    btnCheckOut.addEventListener("click", async () => {
-      if (!record.checkIn || record.checkOut) return; // belum check-in / sudah check-out
-
-      window.setButtonLoading(btnCheckOut, true, "Menyimpan...");
-
+      
+      await db.collection("attendance").doc(recordId).set(data, { merge: true });
+      
+      const statusText = status === "telat" ? "terlambat" : "hadir";
+      window.showToast(`Check-in berhasil! Anda ${statusText}.`, "success");
+      
+    } catch (error) {
+      console.error("Check-in error:", error);
+      window.showToast("Gagal melakukan check-in.", "error");
+    } finally {
+      window.setButtonLoading(btn, false);
+    }
+  }
+  
+  /** Handle Check-out */
+  async function handleCheckOut() {
+    const btn = document.getElementById("btnCheckOut");
+    if (!btn || btn.disabled) return;
+    
+    window.setButtonLoading(btn, true, "Mencatat...");
+    
+    try {
       const now = new Date();
-      const totalJamKerjaDetik = (now.getTime() - new Date(record.checkIn).getTime()) / 1000;
-
-      try {
-        await ref.set({
-          checkOut: now.toISOString(),
-          totalJamKerjaDetik,
-        }, { merge: true });
-        window.showToast(`Check-out berhasil. Total kerja: ${formatDuration(totalJamKerjaDetik)}.`, "success");
-      } catch (err) {
-        console.error("Gagal menyimpan check-out:", err);
-        elHint.textContent = "Gagal menyimpan check-out. Coba lagi.";
-        window.showToast("Gagal menyimpan check-out. Coba lagi.", "error");
-      } finally {
-        window.setButtonLoading(btnCheckOut, false);
-        render();
+      const recordId = getTodayRecordId();
+      
+      // Baca data check-in dulu
+      const doc = await db.collection("attendance").doc(recordId).get();
+      if (!doc.exists) {
+        window.showToast("Data check-in tidak ditemukan.", "error");
+        window.setButtonLoading(btn, false);
+        return;
       }
-    });
+      
+      const data = doc.data();
+      const checkInDate = new Date(data.checkIn);
+      const totalDetik = Math.floor((now - checkInDate) / 1000);
+      
+      const updateData = {
+        checkOut: now.toISOString(),
+        totalJamKerjaDetik: totalDetik
+      };
+      
+      await db.collection("attendance").doc(recordId).set(updateData, { merge: true });
+      
+      window.showToast(`Check-out berhasil! Total: ${formatDuration(totalDetik)}`, "success");
+      
+    } catch (error) {
+      console.error("Check-out error:", error);
+      window.showToast("Gagal melakukan check-out.", "error");
+    } finally {
+      window.setButtonLoading(btn, false);
+    }
+  }
+  
+  document.addEventListener("DOMContentLoaded", () => {
+    const btnCheckIn = document.getElementById("btnCheckIn");
+    const btnCheckOut = document.getElementById("btnCheckOut");
+    
+    if (!btnCheckIn || !btnCheckOut) return; // Bukan halaman Absensi
+    
+    if (typeof db === "undefined") {
+      window.showToast("Gagal memuat modul penyimpanan data.", "error");
+      return;
+    }
+    
+    // Event listeners
+    btnCheckIn.addEventListener("click", handleCheckIn);
+    btnCheckOut.addEventListener("click", handleCheckOut);
+    
+    // Real-time listener untuk data hari ini
+    const recordId = getTodayRecordId();
+    db.collection("attendance").doc(recordId).onSnapshot(
+      (snapshot) => {
+        updateUI(snapshot.exists ? snapshot.data() : null);
+      },
+      (error) => {
+        console.error("Gagal memuat data attendance:", error);
+        window.showToast("Gagal memuat data attendance.", "error");
+      }
+    );
   });
 })();

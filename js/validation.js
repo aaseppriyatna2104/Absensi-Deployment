@@ -1,131 +1,192 @@
 /* =========================================================
-   VALIDATION — validasi input pada form Profil (halaman
-   profil.html). Validasi dilakukan di sisi klien sebelum
-   data "disimpan" (saat ini disimulasikan, karena project
-   belum punya penyimpanan data profil).
+   VALIDATION — validasi form halaman Profil.
+   
+   Memvalidasi input Nama, Email, Telepon, dan Alamat.
    ========================================================= */
 
 (function () {
-  // Pola nomor telepon Indonesia: boleh diawali +62 / 62 / 0,
-  // diikuti 8-13 digit (dengan atau tanpa tanda strip/spasi).
-  const PHONE_PATTERN = /^(\+62|62|0)[\s-]?8[0-9]{2}[\s-]?[0-9]{3,4}[\s-]?[0-9]{3,4}$/;
-  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  /**
-   * Menandai satu form-field sebagai error/tidak, menampilkan
-   * pesan error yang sudah ada di HTML (span.form-field__error).
-   * @param {HTMLElement} fieldEl - elemen pembungkus .form-field
-   * @param {boolean} isValid
-   */
-  function setFieldValidity(fieldEl, isValid) {
-    if (!fieldEl) return;
-    fieldEl.classList.toggle("has-error", !isValid);
+  /** Validasi email dengan regex sederhana. @param {string} email @returns {boolean} */
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   }
-
-  /**
-   * Memvalidasi field Nama Lengkap: wajib diisi, minimal 2 karakter.
-   * @param {HTMLInputElement} input
-   * @returns {boolean} true jika valid
-   */
-  function validateNama(input) {
-    const value = input.value.trim();
-    return value.length >= 2;
+  
+  /** Validasi nomor telepon Indonesia (minimal 10 digit, dimulai dengan 0 atau +62). @param {string} phone @returns {boolean} */
+  function isValidPhone(phone) {
+    const phoneRegex = /^(\+62|0)[0-9]{9,}$/;
+    return phoneRegex.test(phone.replace(/[-\s]/g, ''));
   }
-
-  /**
-   * Memvalidasi field Email dengan pola email sederhana.
-   * @param {HTMLInputElement} input
-   * @returns {boolean} true jika valid
-   */
-  function validateEmail(input) {
-    const value = input.value.trim();
-    return EMAIL_PATTERN.test(value);
+  
+  /** Validasi field nama (tidak boleh kosong, minimal 2 karakter). @param {string} name @returns {boolean} */
+  function isValidName(name) {
+    return name.trim().length >= 2;
   }
-
-  /**
-   * Memvalidasi field Nomor Telepon dengan pola nomor Indonesia.
-   * @param {HTMLInputElement} input
-   * @returns {boolean} true jika valid
-   */
-  function validateTelepon(input) {
-    const value = input.value.trim().replace(/[()]/g, "");
-    return PHONE_PATTERN.test(value);
+  
+  /** Validasi field alamat (tidak boleh kosong, minimal 5 karakter). @param {string} address @returns {boolean} */
+  function isValidAddress(address) {
+    return address.trim().length >= 5;
   }
-
-  /**
-   * Memvalidasi field Alamat: wajib diisi, minimal 5 karakter.
-   * @param {HTMLInputElement} input
-   * @returns {boolean} true jika valid
-   */
-  function validateAlamat(input) {
-    const value = input.value.trim();
-    return value.length >= 5;
+  
+  /** Menampilkan error pada field tertentu. @param {HTMLElement} field @param {boolean} isError */
+  function setFieldError(field, isError) {
+    const formField = field.closest('.form-field');
+    if (isError) {
+      formField.classList.add('has-error');
+    } else {
+      formField.classList.remove('has-error');
+    }
   }
-
-  // Peta nama field -> fungsi validasinya masing-masing.
-  const VALIDATORS = {
-    nama: validateNama,
-    email: validateEmail,
-    telepon: validateTelepon,
-    alamat: validateAlamat,
-  };
-
-  /**
-   * Menjalankan semua validator terhadap form, menandai field
-   * yang error, dan mengembalikan status keseluruhan.
-   * @param {HTMLFormElement} form
-   * @returns {boolean} true jika SEMUA field valid
-   */
+  
+  /** Validasi satu field. @param {HTMLElement} field @returns {boolean} */
+  function validateField(field) {
+    const name = field.name;
+    const value = field.value.trim();
+    let isValid = true;
+    
+    switch (name) {
+      case 'nama':
+        isValid = isValidName(value);
+        break;
+      case 'email':
+        isValid = isValidEmail(value);
+        break;
+      case 'telepon':
+        isValid = isValidPhone(value);
+        break;
+      case 'alamat':
+        isValid = isValidAddress(value);
+        break;
+      default:
+        isValid = value.length > 0;
+    }
+    
+    setFieldError(field, !isValid);
+    return isValid;
+  }
+  
+  /** Validasi seluruh form. @param {HTMLFormElement} form @returns {boolean} */
   function validateForm(form) {
-    let allValid = true;
-
-    Object.keys(VALIDATORS).forEach((fieldName) => {
-      const input = form.elements[fieldName];
-      const fieldEl = form.querySelector(`[data-field="${fieldName}"]`);
-      if (!input || !fieldEl) return;
-
-      const isValid = VALIDATORS[fieldName](input);
-      setFieldValidity(fieldEl, isValid);
-      if (!isValid) allValid = false;
+    const fields = form.querySelectorAll('input[required]');
+    let isFormValid = true;
+    
+    fields.forEach(field => {
+      if (!validateField(field)) {
+        isFormValid = false;
+      }
     });
-
-    return allValid;
+    
+    return isFormValid;
   }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const form = document.getElementById("profilForm");
-    if (!form) return; // bukan halaman Profil
-
-    const submitBtn = document.getElementById("btnSimpanProfil");
-
-    // Validasi langsung saat pengguna keluar dari sebuah field
-    // (blur), supaya error terlihat lebih awal — bukan cuma pas submit.
-    Object.keys(VALIDATORS).forEach((fieldName) => {
-      const input = form.elements[fieldName];
-      if (!input) return;
-      input.addEventListener("blur", () => {
-        const fieldEl = form.querySelector(`[data-field="${fieldName}"]`);
-        setFieldValidity(fieldEl, VALIDATORS[fieldName](input));
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('profileForm');
+    if (!form) return; // Bukan halaman Profil
+    
+    const btnSave = document.getElementById('btnSaveProfile');
+    
+    // Validasi saat blur (field ditinggalkan)
+    form.querySelectorAll('input[required]').forEach(field => {
+      field.addEventListener('blur', () => {
+        if (field.value.trim().length > 0) {
+          validateField(field);
+        }
+      });
+      
+      // Hapus error saat user mulai mengetik
+      field.addEventListener('input', () => {
+        setFieldError(field, false);
       });
     });
-
-    form.addEventListener("submit", async (e) => {
+    
+    // Load data profil yang tersimpan
+    loadProfileData(form);
+    
+    // Handle submit form
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-
-      const isValid = validateForm(form);
-      if (!isValid) {
-        window.showToast("Periksa kembali data yang belum sesuai.", "error");
+      
+      if (!validateForm(form)) {
+        window.showToast('Mohon lengkapi semua field dengan benar.', 'error');
         return;
       }
-
-      // Simulasi proses simpan (belum ada backend/penyimpanan profil
-      // sungguhan) — dibuat sebentar supaya spinner terlihat jelas
-      // dan mudah diganti dengan pemanggilan API/Firestore nanti.
-      window.setButtonLoading(submitBtn, true, "Menyimpan...");
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      window.setButtonLoading(submitBtn, false);
-
-      window.showToast("Perubahan profil berhasil disimpan.", "success");
+      
+      window.setButtonLoading(btnSave, true, 'Menyimpan...');
+      
+      try {
+        // Simpan data profil ke localStorage
+        const profileData = {
+          nama: form.elements.nama.value.trim(),
+          email: form.elements.email.value.trim(),
+          telepon: form.elements.telepon.value.trim(),
+          alamat: form.elements.alamat.value.trim(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        const profileKey = `profile_${CURRENT_EMPLOYEE.id}`;
+        localStorage.setItem(profileKey, JSON.stringify(profileData));
+        
+        window.showToast('Data profil berhasil disimpan!', 'success');
+        
+      } catch (error) {
+        console.error('Save profile error:', error);
+        window.showToast('Gagal menyimpan data profil.', 'error');
+      } finally {
+        window.setButtonLoading(btnSave, false);
+      }
     });
   });
+  
+  /** Load data profil dari localStorage dan isi form. @param {HTMLFormElement} form */
+  function loadProfileData(form) {
+    try {
+      const profileKey = `profile_${CURRENT_EMPLOYEE.id}`;
+      const raw = localStorage.getItem(profileKey);
+      
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data.nama) form.elements.nama.value = data.nama;
+        if (data.email) form.elements.email.value = data.email;
+        if (data.telepon) form.elements.telepon.value = data.telepon;
+        if (data.alamat) form.elements.alamat.value = data.alamat;
+      }
+    } catch (e) {
+      console.error('Load profile error:', e);
+    }
+    
+    // Update tampilan kartu profil
+    updateProfileCard();
+  }
+  
+  /** Update tampilan kartu profil di sidebar dan halaman profil. */
+  function updateProfileCard() {
+    const session = getSessionUser();
+    if (!session) return;
+    
+    // Update kartu di halaman profil
+    const profileAvatar = document.getElementById('profileAvatar');
+    const profileName = document.getElementById('profileName');
+    const profileRole = document.getElementById('profileRole');
+    const profileUsername = document.getElementById('profileUsername');
+    const infoUsername = document.getElementById('infoUsername');
+    const infoRole = document.getElementById('infoRole');
+    
+    if (profileAvatar) {
+      profileAvatar.textContent = session.nama.slice(0, 2).toUpperCase();
+    }
+    if (profileName) {
+      profileName.textContent = session.nama;
+    }
+    if (profileRole) {
+      profileRole.textContent = session.role === 'admin' ? 'Administrator' : 'Staff';
+    }
+    if (profileUsername) {
+      profileUsername.textContent = `@${session.username}`;
+    }
+    if (infoUsername) {
+      infoUsername.textContent = session.username;
+    }
+    if (infoRole) {
+      infoRole.textContent = session.role === 'admin' ? 'Administrator' : 'Staff';
+    }
+  }
 })();

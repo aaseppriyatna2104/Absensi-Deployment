@@ -135,6 +135,44 @@
   }
 
   /**
+   * Menghitung & menampilkan 4 kartu ringkasan hari ini:
+   * Hadir hari ini, Terlambat hari ini, Total jam kerja hari ini, Alpha hari ini.
+   * @param {Array<object>} records - seluruh record presensi karyawan
+   * @param {Date} today
+   */
+  function renderTodayStats(records, today) {
+    const todayStart = startOfDay(today);
+    const todayEnd = startOfDay(today);
+
+    const todayRecords = records.filter((r) => {
+      const d = startOfDay(r.date);
+      return d >= todayStart && d <= todayEnd;
+    });
+
+    const todayHadir = todayRecords.filter((r) => r.checkIn).length;
+    const todayTelat = todayRecords.filter((r) => r.status === "telat").length;
+    const todayDetik = todayRecords.reduce((sum, r) => {
+      return sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0);
+    }, 0);
+
+    // Hitung alpha: jumlah karyawan unik yang belum check-in hari ini
+    const uniqueEmployees = new Set(records.map((r) => r.nama));
+    const employeesToday = new Set(todayRecords.map((r) => r.nama));
+    const todayAlpha = Math.max(0, uniqueEmployees.size - employeesToday.size);
+
+    /** Helper kecil: set textContent kalau elemennya ada. @param {string} id @param {string|number} val */
+    const setText = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    setText("todayHadir", todayHadir);
+    setText("todayTelat", todayTelat);
+    setText("todayJamKerja", formatDuration(todayDetik));
+    setText("todayAlpha", todayAlpha);
+  }
+
+  /**
    * Menggambar grafik bar bertumpuk "Kehadiran Mingguan" (Senin–Minggu,
    * minggu berjalan): tiap hari menunjukkan Hadir/Terlambat/Alpha.
    * @param {Array<object>} records
@@ -280,6 +318,7 @@
         const records = snapshot.docs.map((doc) => docToRecord(doc.data()));
         const today = new Date();
 
+        renderTodayStats(records, today);
         renderStatCards(records, today);
         buildWeeklyChart(records, today);
         buildMonthlyChart(records, today);
