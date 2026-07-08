@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Anti-flash: terapkan tema tersimpan SEBELUM CSS dirender,
+  // supaya halaman tidak "berkedip" terang lalu gelap.
+  (function () {
+    try {
+      var saved = localStorage.getItem("theme");
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (saved === "dark" || (!saved && prefersDark)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (e) { /* localStorage tidak tersedia — abaikan, pakai tema terang */ }
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profil — Absensi Karyawan</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/variables.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+<div class="sidebar-backdrop" data-sidebar-close></div>
+
+<div class="app-shell">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <button class="sidebar__close-btn" data-sidebar-close aria-label="Tutup menu">
+      <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="sidebar__brand">
+      <div class="sidebar__brand-mark">RA</div>
+      <div class="sidebar__brand-text">
+        <span class="sidebar__brand-name">Recharge Absensi</span>
+        <span class="sidebar__brand-sub">Operasional Jakarta</span>
+      </div>
+    </div>
+
+    <span class="sidebar__section-label">Menu</span>
+    <nav class="nav-menu">
+      <a href="index.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Dashboard</span>
+      </a>
+      <a href="absensi.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Absensi</span>
+      </a>
+      <a href="riwayat.html" class="nav-menu__item">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Riwayat</span>
+      </a>
+      <a href="profil.html" class="nav-menu__item is-active">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Profil</span>
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar">AT</div>
+        <div>
+          <div class="sidebar__user-name">Atna</div>
+          <div class="sidebar__user-role">Staf Operasional</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN COLUMN ============ -->
+  <div class="main-col">
+
+    <div class="mobile-topbar">
+      <button class="mobile-topbar__menu-btn" data-sidebar-open aria-label="Buka menu">
+        <svg viewBox="0 0 24 24" fill="none" width="22" height="22"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <span class="mobile-topbar__brand">Recharge Absensi</span>
+      <button class="mobile-topbar__menu-btn theme-toggle-btn" data-theme-toggle aria-label="Ganti tema">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="20" height="20"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar__title-group">
+        <h1>Profil</h1>
+        <div class="topbar__breadcrumb">Kelola data diri dan preferensi akun</div>
+      </div>
+      <div class="topbar__right">
+        <div class="punch-clock">
+          <span class="punch-clock__dot"></span>
+          <span class="punch-clock__time" data-live-time>--:--:--</span>
+          <span class="punch-clock__date mono" data-live-date>-</span>
+        </div>
+        <button class="topbar__icon-btn theme-toggle-btn" data-theme-toggle aria-label="Ganti tema">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+        <button class="topbar__icon-btn" aria-label="Notifikasi">
+          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <section class="profile-grid">
+
+        <!-- Kartu identitas -->
+        <div class="profile-card">
+          <div class="profile-card__avatar">AT</div>
+          <h2 class="profile-card__name">Atna</h2>
+          <div class="profile-card__role">Staf Operasional — Recharge Indonesia</div>
+          <div class="profile-card__id-badge mono">ID KARYAWAN · RCG-0142</div>
+
+          <div class="profile-card__meta-list">
+            <div class="profile-card__meta-row"><span>Divisi</span><span>Operasional &amp; Logistik</span></div>
+            <div class="profile-card__meta-row"><span>Lokasi</span><span>Jakarta</span></div>
+            <div class="profile-card__meta-row"><span>Bergabung</span><span>12 Feb 2024</span></div>
+            <div class="profile-card__meta-row"><span>Atasan</span><span>Budi Hartono</span></div>
+          </div>
+        </div>
+
+        <!-- Detail & form (tervalidasi lewat js/validation.js) -->
+        <div class="panel" style="margin-bottom:0;">
+          <div class="tab-row">
+            <span class="tab-item is-active">Data Diri</span>
+            <span class="tab-item">Keamanan</span>
+            <span class="tab-item">Preferensi</span>
+          </div>
+
+          <form id="profilForm" novalidate>
+            <div class="form-grid">
+              <div class="form-field" data-field="nama">
+                <label for="inputNama">Nama Lengkap</label>
+                <input type="text" id="inputNama" name="nama" value="Atna" required minlength="2">
+                <span class="form-field__error">Nama minimal 2 karakter.</span>
+              </div>
+
+              <div class="form-field">
+                <label for="inputIdKaryawan">ID Karyawan</label>
+                <input type="text" id="inputIdKaryawan" value="RCG-0142" disabled>
+              </div>
+
+              <div class="form-field" data-field="email">
+                <label for="inputEmail">Email</label>
+                <input type="email" id="inputEmail" name="email" value="atna@rechargeindonesia.co.id" required>
+                <span class="form-field__error">Masukkan alamat email yang valid.</span>
+              </div>
+
+              <div class="form-field" data-field="telepon">
+                <label for="inputTelepon">Nomor Telepon</label>
+                <input type="text" id="inputTelepon" name="telepon" value="+62 812-3456-7890" required>
+                <span class="form-field__error">Gunakan format nomor telepon Indonesia yang valid.</span>
+              </div>
+
+              <div class="form-field">
+                <label for="selectDivisi">Divisi</label>
+                <select id="selectDivisi" name="divisi">
+                  <option selected>Operasional &amp; Logistik</option>
+                  <option>Administrasi</option>
+                  <option>Driver</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="selectLokasi">Lokasi Kerja</label>
+                <select id="selectLokasi" name="lokasi">
+                  <option selected>Kantor Operasional Jakarta</option>
+                  <option>Gudang Cikarang</option>
+                </select>
+              </div>
+
+              <div class="form-field form-field--full" data-field="alamat">
+                <label for="inputAlamat">Alamat</label>
+                <input type="text" id="inputAlamat" name="alamat" value="Jl. Kemang Raya No. 12, Jakarta Selatan" required minlength="5">
+                <span class="form-field__error">Alamat minimal 5 karakter.</span>
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:var(--sp-3); margin-top:var(--sp-6);">
+              <button type="reset" class="btn btn--outline" id="btnBatal">Batal</button>
+              <button type="submit" class="btn btn--primary" id="btnSimpanProfil">Simpan Perubahan</button>
+            </div>
+          </form>
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/theme.js"></script>
+<script src="js/toast.js"></script>
+<script src="js/spinner.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/validation.js"></script>
+</body>
+</html>
