@@ -15,6 +15,21 @@
     } catch (e) { /* localStorage tidak tersedia — abaikan, pakai tema terang */ }
   })();
 </script>
+
+<script>
+  // Guard login: kalau belum ada sesi, langsung lempar ke halaman
+  // login SEBELUM konten halaman ini sempat dirender/terlihat.
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (!session || !session.username) {
+        window.location.replace("login.html");
+      }
+    } catch (e) {
+      window.location.replace("login.html");
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — Absensi Karyawan</title>
 
@@ -66,11 +81,14 @@
 
     <div class="sidebar__footer">
       <div class="sidebar__user">
-        <div class="sidebar__avatar">AT</div>
+        <div class="sidebar__avatar" data-session-avatar>--</div>
         <div>
-          <div class="sidebar__user-name">Atna</div>
-          <div class="sidebar__user-role">Staf Operasional</div>
+          <div class="sidebar__user-name" data-session-name>...</div>
+          <div class="sidebar__user-role" data-session-role>...</div>
         </div>
+        <button class="sidebar__logout-btn" data-logout aria-label="Keluar" title="Keluar">
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
   </aside>
@@ -323,6 +341,7 @@
   </div>
 </div>
 
+<script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/dashboard-stats.js"></script>
 </body>

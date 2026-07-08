@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Anti-flash tema (sama seperti halaman lain).
+  (function () {
+    try {
+      var saved = localStorage.getItem("theme");
+      var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (saved === "dark" || (!saved && prefersDark)) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    } catch (e) { /* localStorage tidak tersedia — abaikan */ }
+  })();
+
+  // Kalau sudah login, langsung lempar ke Dashboard — tidak perlu
+  // lihat form login lagi.
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (session && session.username) {
+        window.location.replace("index.html");
+      }
+    } catch (e) { /* biarkan tampil form login seperti biasa */ }
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk — Absensi Karyawan</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="css/style.css">
+
+<style>
+  /* Gaya khusus halaman login — cukup kecil, tidak perlu file terpisah */
+  .login-shell {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--sp-5);
+    background: var(--color-bg);
+  }
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-8) var(--sp-6);
+    box-shadow: var(--shadow-md);
+  }
+  .login-card__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-6);
+  }
+  .login-card__brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--color-teal-500);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    color: var(--color-navy-900);
+  }
+  .login-card h1 {
+    font-size: var(--fs-lg);
+    margin-bottom: 2px;
+  }
+  .login-card__sub {
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--sp-6);
+  }
+  .login-card .form-field {
+    margin-bottom: var(--sp-4);
+  }
+  .login-card .btn {
+    width: 100%;
+    margin-top: var(--sp-2);
+  }
+  .login-card__hint {
+    margin-top: var(--sp-5);
+    padding-top: var(--sp-4);
+    border-top: 1px solid var(--color-border);
+    font-size: var(--fs-xs);
+    color: var(--color-text-faint);
+    line-height: 1.7;
+  }
+  .login-card__hint code {
+    font-family: var(--font-mono);
+    background: var(--color-surface-alt);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--color-text-muted);
+  }
+  .login-card__theme-toggle {
+    position: absolute;
+    top: var(--sp-5);
+    right: var(--sp-5);
+  }
+</style>
+</head>
+<body>
+
+<div class="login-shell">
+  <button class="topbar__icon-btn theme-toggle-btn login-card__theme-toggle" data-theme-toggle aria-label="Ganti tema" style="position:fixed;">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+  </button>
+
+  <div class="login-card">
+    <div class="login-card__brand">
+      <div class="login-card__brand-mark">RA</div>
+      <div>
+        <div style="font-family:var(--font-display); font-weight:600;">Recharge Absensi</div>
+        <div style="font-size:var(--fs-xs); color:var(--color-text-faint);">Operasional Jakarta</div>
+      </div>
+    </div>
+
+    <h1>Masuk</h1>
+    <div class="login-card__sub">Masuk dengan akun karyawan Anda untuk mencatat presensi.</div>
+
+    <form id="loginForm" novalidate>
+      <div class="form-field" data-field="username">
+        <label for="inputUsername">Username</label>
+        <input type="text" id="inputUsername" name="username" autocomplete="username" placeholder="mis. asep" required>
+        <span class="form-field__error">Username wajib diisi.</span>
+      </div>
+
+      <div class="form-field" data-field="password">
+        <label for="inputPassword">Password</label>
+        <input type="password" id="inputPassword" name="password" autocomplete="current-password" placeholder="••••••••" required>
+        <span class="form-field__error">Password wajib diisi.</span>
+      </div>
+
+      <button type="submit" class="btn btn--primary" id="btnLogin">Masuk</button>
+    </form>
+
+    <div class="login-card__hint">
+      Demo — 3 akun tersedia:<br>
+      Admin: <code>admin</code> / <code>admin123</code><br>
+      Staff: <code>asep</code> / <code>asep123</code><br>
+      Staff: <code>rezky</code> / <code>rezky123</code>
+    </div>
+  </div>
+</div>
+
+<script src="js/auth.js"></script>
+<script src="js/core.js"></script>
+<script>
+  // Logika submit form login — ditulis langsung di sini (bukan file
+  // terpisah) karena cuma dipakai di halaman ini saja.
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("loginForm");
+    const btnLogin = document.getElementById("btnLogin");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = form.elements.username.value.trim();
+      const password = form.elements.password.value;
+
+      form.querySelectorAll(".form-field").forEach((f) => f.classList.remove("has-error"));
+
+      let hasError = false;
+      if (!username) {
+        form.querySelector('[data-field="username"]').classList.add("has-error");
+        hasError = true;
+      }
+      if (!password) {
+        form.querySelector('[data-field="password"]').classList.add("has-error");
+        hasError = true;
+      }
+      if (hasError) return;
+
+      window.setButtonLoading(btnLogin, true, "Memeriksa...");
+      // Jeda kecil supaya spinner terlihat jelas (di dunia nyata ini
+      // akan jadi waktu tunggu request ke server autentikasi).
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
+      const session = window.Auth.login(username, password);
+      window.setButtonLoading(btnLogin, false);
+
+      if (!session) {
+        window.showToast("Username atau password salah.", "error");
+        return;
+      }
+
+      window.showToast(`Selamat datang, ${session.nama}!`, "success", 1500);
+      setTimeout(() => { window.location.href = "index.html"; }, 500);
+    });
+  });
+</script>
+</body>
+</html>
