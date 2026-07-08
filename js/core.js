@@ -279,27 +279,37 @@
 })(window);
 
 
-/* ===== dari: app-config.js ===== */
+/* ===== dari: app-config.js (sekarang dinamis dari sesi login) ===== */
 /* =========================================================
-   APP CONFIG — pengaturan aplikasi yang tidak tergantung pada
-   jenis penyimpanan (localStorage sekarang, Firestore nanti).
+   APP CONFIG — identitas karyawan yang sedang login.
 
-   Dipisah dari file "db" (local-db.js) supaya kalau nanti
-   pindah ke Firebase, file ini TIDAK PERLU diubah sama sekali.
+   Dulu nilai ini statis ("Atna" saja). Sekarang dibaca lewat
+   window.Auth.getSession() (didefinisikan di js/auth.js, wajib
+   dimuat SEBELUM core.js di setiap halaman), jadi tiap akun
+   (admin, asep, rezky) punya data presensinya masing-masing
+   secara otomatis — cukup ganti-ganti akun lewat halaman login,
+   tidak perlu ubah kode.
    ========================================================= */
 
-/* ---------------------------------------------------------
-   Identitas karyawan aktif.
-   Untuk saat ini masih 1 karyawan (statis) — cukup ganti nilai
-   di sini kalau dipakai orang lain. Field "id" dipakai sebagai
-   bagian dari ID dokumen/record, "nama" disimpan sebagai data.
-   Struktur ini sudah didesain gampang dikembangkan jadi
-   multi-karyawan (misalnya nanti dihubungkan ke sistem login).
-   --------------------------------------------------------- */
-const CURRENT_EMPLOYEE = {
-  id: "atna",     // dipakai sebagai bagian dari ID record
-  nama: "Atna",   // disimpan ke field "nama"
-};
+/**
+ * Alias singkat untuk window.Auth.getSession(), supaya kode di
+ * bawahnya (dan bagian auth-ui di paling bawah file ini) tetap
+ * ringkas.
+ * @returns {{username: string, nama: string, role: string}|null}
+ */
+function getSessionUser() {
+  return window.Auth ? window.Auth.getSession() : null;
+}
+
+const _session = getSessionUser();
+
+// Kalau halaman ini butuh sesi tapi tidak ada (harusnya sudah
+// dicegat oleh guard di <head>), pakai identitas kosong supaya
+// skrip lain tidak error — guard di <head> akan segera redirect
+// ke login.html sebelum pengguna sempat lihat/pakai halaman ini.
+const CURRENT_EMPLOYEE = _session
+  ? { id: _session.username, nama: _session.nama, role: _session.role }
+  : { id: "guest", nama: "Guest", role: "staff" };
 
 
 /* ===== dari: theme.js ===== */
@@ -555,6 +565,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   openBtn?.addEventListener("click", openSidebar);
   closeBtns.forEach((btn) => btn.addEventListener("click", closeSidebar));
+});
+
+
+/* ===== dari: auth-ui.js (tampilan akun & logout di sidebar) ===== */
+/* =========================================================
+   AUTH UI — menampilkan nama/peran akun yang sedang login di
+   sidebar, plus tombol Logout. Terpisah dari auth.js supaya
+   auth.js sendiri tetap murni logika (login/logout/sesi) tanpa
+   urusan DOM.
+   ========================================================= */
+
+document.addEventListener("DOMContentLoaded", () => {
+  const session = getSessionUser();
+  if (!session) return; // halaman login tidak butuh ini
+
+  const nameEl = document.querySelector("[data-session-name]");
+  const roleEl = document.querySelector("[data-session-role]");
+  const avatarEl = document.querySelector("[data-session-avatar]");
+
+  if (nameEl) nameEl.textContent = session.nama;
+  if (roleEl) roleEl.textContent = session.role === "admin" ? "Administrator" : "Staff";
+  if (avatarEl) avatarEl.textContent = session.nama.slice(0, 2).toUpperCase();
+
+  // Tombol logout bisa ada lebih dari satu (sidebar desktop & mobile).
+  document.querySelectorAll("[data-logout]").forEach((btn) => {
+    btn.addEventListener("click", () => window.Auth.logout());
+  });
 });
 
 

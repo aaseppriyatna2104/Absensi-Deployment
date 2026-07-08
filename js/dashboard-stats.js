@@ -84,6 +84,7 @@
     const [y, m, d] = data.tanggal.split("-").map(Number);
     return {
       date: new Date(y, m - 1, d),
+      nama: data.nama || "-",
       checkIn: data.checkIn ? new Date(data.checkIn) : null,
       checkOut: data.checkOut ? new Date(data.checkOut) : null,
       totalJamKerjaDetik: data.totalJamKerjaDetik || 0,
@@ -112,8 +113,13 @@
       return sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0);
     }, 0);
     const workingDays = countWeekdays(monthStart, dayEnd);
-    const persentase = workingDays > 0
-      ? Math.min(100, Math.round((totalHadir / workingDays) * 100))
+
+    // Untuk admin (records berisi banyak karyawan sekaligus), penyebut
+    // persentase dikalikan jumlah karyawan unik supaya tetap masuk akal.
+    const uniqueEmployeeCount = new Set(monthRecords.map((r) => r.nama)).size || 1;
+    const denominator = workingDays * uniqueEmployeeCount;
+    const persentase = denominator > 0
+      ? Math.min(100, Math.round((totalHadir / denominator) * 100))
       : 0;
 
     /** Helper kecil: set textContent kalau elemennya ada. @param {string} id @param {string|number} val */
@@ -149,15 +155,13 @@
 
       const isWeekend = day.getDay() === 0 || day.getDay() === 6;
       const isFuture = day > startOfDay(today);
-      const record = records.find((r) => sameDate(r.date, day));
+      // Pakai filter() (bukan find()) supaya benar juga untuk admin,
+      // yang datanya bisa berisi check-in beberapa karyawan di hari yang sama.
+      const dayRecords = records.filter((r) => sameDate(r.date, day) && r.checkIn);
 
-      let hadir = 0, telat = 0, alpha = 0;
-      if (record && record.checkIn) {
-        if (record.status === "telat") telat = 1;
-        else hadir = 1;
-      } else if (!isWeekend && !isFuture) {
-        alpha = 1;
-      }
+      const hadir = dayRecords.filter((r) => r.status !== "telat").length;
+      const telat = dayRecords.filter((r) => r.status === "telat").length;
+      const alpha = (!isWeekend && !isFuture && dayRecords.length === 0) ? 1 : 0;
 
       hadirData.push(hadir);
       telatData.push(telat);
@@ -180,7 +184,9 @@
         maintainAspectRatio: false,
         scales: {
           x: { stacked: true, grid: { display: false } },
-          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 }, max: 1 },
+          // Tanpa "max: 1" — untuk admin, sumbu Y otomatis menyesuaikan
+          // kalau ada beberapa karyawan hadir di hari yang sama.
+          y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } },
         },
         plugins: {
           legend: { position: "bottom", labels: { boxWidth: 10, font: { family: "Inter", size: 11 } } },
@@ -212,8 +218,9 @@
       for (let day = w.from; day <= w.to; day++) {
         const date = new Date(today.getFullYear(), today.getMonth(), day);
         if (date > startOfDay(today)) continue;
-        const record = records.find((r) => sameDate(r.date, date));
-        if (record && record.checkIn) count++;
+        // filter().length (bukan find()) supaya benar juga untuk admin
+        // yang datanya berisi check-in beberapa karyawan per hari.
+        count += records.filter((r) => sameDate(r.date, date) && r.checkIn).length;
       }
       return count;
     });
@@ -260,11 +267,16 @@
       return;
     }
 
+    // Admin melihat statistik gabungan SEMUA karyawan; staff hanya
+    // melihat datanya sendiri.
+    const isAdmin = CURRENT_EMPLOYEE.role === "admin";
+    const query = isAdmin
+      ? db.collection("attendance")
+      : db.collection("attendance").where("nama", "==", CURRENT_EMPLOYEE.nama);
+
     // Real-time listener — kartu & grafik otomatis update begitu ada
     // check-in/check-out baru, tanpa perlu reload halaman.
-    db.collection("attendance")
-      .where("nama", "==", CURRENT_EMPLOYEE.nama)
-      .onSnapshot((snapshot) => {
+    query.onSnapshot((snapshot) => {
         const records = snapshot.docs.map((doc) => docToRecord(doc.data()));
         const today = new Date();
 

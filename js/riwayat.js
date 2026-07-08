@@ -12,7 +12,7 @@
     "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
     "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
   ];
-  const TABLE_COLUMN_COUNT = 6;
+  const TABLE_COLUMN_COUNT = 7;
 
   /** Menambahkan angka nol di depan kalau kurang dari 2 digit. @param {number} n @returns {string} */
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -87,6 +87,7 @@
     const [y, m, d] = data.tanggal.split("-").map(Number);
     return {
       date: new Date(y, m - 1, d),
+      nama: data.nama || "-",
       checkIn: data.checkIn ? new Date(data.checkIn) : null,
       checkOut: data.checkOut ? new Date(data.checkOut) : null,
       totalJamKerjaDetik: data.totalJamKerjaDetik || 0,
@@ -130,6 +131,7 @@
       <tr>
         <td class="mono">${formatDateShort(r.date)}</td>
         <td>${DAY_NAMES[r.date.getDay()]}</td>
+        <td>${r.nama}</td>
         <td class="cell-time mono">${r.checkIn ? formatClock(r.checkIn) : "—:—"}</td>
         <td class="cell-time mono">${r.checkOut ? formatClock(r.checkOut) : "—:—"}</td>
         <td class="cell-time mono">${r.checkIn && r.checkOut ? formatDuration(r.totalJamKerjaDetik) : "00:00:00"}</td>
@@ -141,6 +143,11 @@
    * Menghitung & menampilkan 4 kartu ringkasan (Total Hadir, Total
    * Terlambat, Total Jam Kerja, Persentase Kehadiran) untuk daftar
    * record yang sudah difilter.
+   *
+   * Untuk admin, `records` bisa berisi data BANYAK karyawan
+   * sekaligus — supaya Persentase Kehadiran tetap masuk akal,
+   * penyebutnya dikalikan dengan jumlah karyawan unik yang muncul
+   * di data (bukan cuma jumlah hari kerja).
    * @param {Array<object>} records
    * @param {number} workingDays - jumlah hari kerja pada periode terpilih
    */
@@ -148,8 +155,11 @@
     const totalHadir = records.filter((r) => r.checkIn).length;
     const totalTelat = records.filter((r) => r.status === "telat").length;
     const totalDetik = records.reduce((sum, r) => sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0), 0);
-    const persentase = workingDays > 0
-      ? Math.min(100, Math.round((totalHadir / workingDays) * 100))
+
+    const uniqueEmployeeCount = new Set(records.map((r) => r.nama)).size || 1;
+    const denominator = workingDays * uniqueEmployeeCount;
+    const persentase = denominator > 0
+      ? Math.min(100, Math.round((totalHadir / denominator) * 100))
       : 0;
 
     document.getElementById("statTotalHadir").textContent = totalHadir;
@@ -219,11 +229,17 @@
     let allRecords = [];
     let currentFilter = "harian";
 
+    // Admin melihat data SEMUA karyawan; staff hanya melihat datanya
+    // sendiri. Query Firestore-style ini otomatis menyesuaikan lewat
+    // ada/tidaknya klausa where("nama", ...).
+    const isAdmin = CURRENT_EMPLOYEE.role === "admin";
+    const query = isAdmin
+      ? db.collection("attendance")
+      : db.collection("attendance").where("nama", "==", CURRENT_EMPLOYEE.nama);
+
     // Real-time listener — record baru dari attendance.js langsung
     // muncul di sini tanpa reload halaman.
-    db.collection("attendance")
-      .where("nama", "==", CURRENT_EMPLOYEE.nama)
-      .onSnapshot((snapshot) => {
+    query.onSnapshot((snapshot) => {
         allRecords = snapshot.docs.map((doc) => docToRecord(doc.data()));
         applyFilter(currentFilter, allRecords);
       }, (err) => {
