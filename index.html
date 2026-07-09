@@ -276,43 +276,8 @@
             <a href="riwayat.html" class="btn btn--ghost">Lihat semua</a>
           </div>
 
-          <div class="timeline">
-            <div class="timeline__item">
-              <div class="timeline__time mono">07:52</div>
-              <div class="timeline__avatar">AS</div>
-              <div class="timeline__body">
-                <div class="timeline__name">Asep Saepudin</div>
-                <div class="timeline__meta">Melakukan check-in — Driver</div>
-              </div>
-              <span class="status-badge status-badge--hadir">Hadir</span>
-            </div>
-            <div class="timeline__item">
-              <div class="timeline__time mono">08:14</div>
-              <div class="timeline__avatar">NA</div>
-              <div class="timeline__body">
-                <div class="timeline__name">Nana Sumarna</div>
-                <div class="timeline__meta">Melakukan check-in — Staf Lapangan</div>
-              </div>
-              <span class="status-badge status-badge--telat">Telat</span>
-            </div>
-            <div class="timeline__item">
-              <div class="timeline__time mono">08:30</div>
-              <div class="timeline__avatar">RZ</div>
-              <div class="timeline__body">
-                <div class="timeline__name">Rezki Ramadhan</div>
-                <div class="timeline__meta">Mengajukan izin — Keperluan keluarga</div>
-              </div>
-              <span class="status-badge status-badge--izin">Izin</span>
-            </div>
-            <div class="timeline__item">
-              <div class="timeline__time mono">09:00</div>
-              <div class="timeline__avatar">DW</div>
-              <div class="timeline__body">
-                <div class="timeline__name">Dewi Wulandari</div>
-                <div class="timeline__meta">Belum melakukan check-in</div>
-              </div>
-              <span class="status-badge status-badge--alpha">Alpha</span>
-            </div>
+          <div class="timeline" id="dashTimeline">
+            <div style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">Memuat aktivitas...</div>
           </div>
         </div>
 
@@ -320,27 +285,12 @@
           <div class="panel__header">
             <div>
               <h2>Ringkasan Minggu Ini</h2>
-              <div class="panel__header-sub">Persentase kehadiran per divisi</div>
+              <div class="panel__header-sub">Persentase kehadiran per karyawan (Senin – hari ini)</div>
             </div>
           </div>
 
-          <div class="progress-list">
-            <div class="progress-row">
-              <div class="progress-row__top"><span>Driver</span><strong class="mono">94%</strong></div>
-              <div class="progress-track"><div class="progress-fill" style="width:94%"></div></div>
-            </div>
-            <div class="progress-row">
-              <div class="progress-row__top"><span>Staf Lapangan</span><strong class="mono">88%</strong></div>
-              <div class="progress-track"><div class="progress-fill" style="width:88%"></div></div>
-            </div>
-            <div class="progress-row">
-              <div class="progress-row__top"><span>Operasional</span><strong class="mono">97%</strong></div>
-              <div class="progress-track"><div class="progress-fill" style="width:97%"></div></div>
-            </div>
-            <div class="progress-row">
-              <div class="progress-row__top"><span>Admin</span><strong class="mono">100%</strong></div>
-              <div class="progress-track"><div class="progress-fill" style="width:100%"></div></div>
-            </div>
+          <div class="progress-list" id="dashWeeklySummary">
+            <div style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">Memuat ringkasan...</div>
           </div>
         </div>
 
