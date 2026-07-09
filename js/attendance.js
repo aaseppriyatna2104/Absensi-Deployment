@@ -150,6 +150,7 @@
     if (!btn || btn.disabled) return;
     
     window.setButtonLoading(btn, true, "Mencatat...");
+    console.log("Starting check-in process...");
     
     try {
       const now = new Date();
@@ -166,13 +167,28 @@
         status: status
       };
       
-      await db.collection("attendance").doc(recordId).set(data, { merge: true });
+      console.log("Writing to Firebase:", data);
       
+      // Add timeout for Firebase operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout - Firebase operation took too long")), 10000);
+      });
+      
+      await Promise.race([
+        db.collection("attendance").doc(recordId).set(data, { merge: true }),
+        timeoutPromise
+      ]);
+      
+      console.log("Check-in successful");
       window.showToast(`Check-in berhasil! Anda hadir.`, "success");
       
     } catch (error) {
       console.error("Check-in error:", error);
-      window.showToast("Gagal melakukan check-in.", "error");
+      if (error.message.includes("Timeout")) {
+        window.showToast("Koneksi lambat, coba lagi.", "error");
+      } else {
+        window.showToast("Gagal melakukan check-in.", "error");
+      }
     } finally {
       window.setButtonLoading(btn, false);
     }
@@ -184,12 +200,14 @@
     if (!btn || btn.disabled) return;
     
     window.setButtonLoading(btn, true, "Mencatat...");
+    console.log("Starting check-out process...");
     
     try {
       const now = new Date();
       const recordId = getTodayRecordId();
       
       // Baca data check-in dulu
+      console.log("Reading check-in data from Firebase...");
       const doc = await db.collection("attendance").doc(recordId).get();
       if (!doc.exists) {
         window.showToast("Data check-in tidak ditemukan.", "error");
@@ -206,13 +224,28 @@
         totalJamKerjaDetik: totalDetik
       };
       
-      await db.collection("attendance").doc(recordId).set(updateData, { merge: true });
+      console.log("Writing check-out data to Firebase:", updateData);
       
+      // Add timeout for Firebase operation
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Timeout - Firebase operation took too long")), 10000);
+      });
+      
+      await Promise.race([
+        db.collection("attendance").doc(recordId).set(updateData, { merge: true }),
+        timeoutPromise
+      ]);
+      
+      console.log("Check-out successful");
       window.showToast(`Check-out berhasil! Total: ${formatDuration(totalDetik)}`, "success");
       
     } catch (error) {
       console.error("Check-out error:", error);
-      window.showToast("Gagal melakukan check-out.", "error");
+      if (error.message.includes("Timeout")) {
+        window.showToast("Koneksi lambat, coba lagi.", "error");
+      } else {
+        window.showToast("Gagal melakukan check-out.", "error");
+      }
     } finally {
       window.setButtonLoading(btn, false);
     }
