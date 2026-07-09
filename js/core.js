@@ -26,7 +26,7 @@
    antar semua user/device secara real-time.
    
    db sudah di-initialize di firebase-config.js dan di-export
-   sebagai global variable. Di sini kita pastikan db tersedia.
+   sebagai global variable (window.db).
    ========================================================= */
 
 // db sudah di-export dari firebase-config.js

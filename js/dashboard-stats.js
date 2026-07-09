@@ -292,6 +292,118 @@
     });
   }
 
+  /**
+   * Merender daftar aktivitas presensi HARI INI ke #dashTimeline,
+   * diurutkan dari check-in terbaru. Menggantikan 4 baris dummy
+   * yang sebelumnya ditulis manual di index.html.
+   * @param {Array<object>} records - seluruh record presensi (sudah difilter admin/staff)
+   * @param {Date} today
+   */
+  function renderTimeline(records, today) {
+    const container = document.getElementById("dashTimeline");
+    if (!container) return;
+
+    const todayRecords = records
+      .filter((r) => sameDate(r.date, today) && r.checkIn)
+      .sort((a, b) => b.checkIn - a.checkIn);
+
+    if (!todayRecords.length) {
+      container.innerHTML = `
+        <div style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
+          Belum ada aktivitas presensi hari ini.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = todayRecords.map((r) => {
+      const initials = (r.nama || "-").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+      const jam = `${pad(r.checkIn.getHours())}:${pad(r.checkIn.getMinutes())}`;
+      const meta = r.checkOut ? "Sudah check-out" : "Sedang bekerja";
+      const badge = '<span class="status-badge status-badge--hadir">Hadir</span>';
+      return `
+        <div class="timeline__item">
+          <div class="timeline__time mono">${jam}</div>
+          <div class="timeline__avatar">${initials}</div>
+          <div class="timeline__body">
+            <div class="timeline__name">${r.nama}</div>
+            <div class="timeline__meta">Melakukan check-in — ${meta}</div>
+          </div>
+          ${badge}
+        </div>`;
+    }).join("");
+  }
+
+  /**
+   * Merender persentase kehadiran MINGGU INI per-karyawan ke
+   * #dashWeeklySummary. Menggantikan progress bar dummy per-divisi
+   * (data divisi memang tidak ada di struktur data attendance).
+   * @param {Array<object>} records - seluruh record presensi (sudah difilter admin/staff)
+   * @param {Date} today
+   */
+  function renderWeeklySummary(records, today) {
+    const container = document.getElementById("dashWeeklySummary");
+    if (!container) return;
+
+    const weekStart = startOfWeek(today);
+    const dayEnd = startOfDay(today);
+    const workingDays = countWeekdays(weekStart, dayEnd) || 1;
+
+    const weekRecords = records.filter((r) => {
+      const d = startOfDay(r.date);
+      return d >= weekStart && d <= dayEnd;
+    });
+
+    const byEmployee = {};
+    weekRecords.forEach((r) => {
+      if (!r.checkIn) return;
+      byEmployee[r.nama] = (byEmployee[r.nama] || 0) + 1;
+    });
+
+    const names = Object.keys(byEmployee);
+    if (!names.length) {
+      container.innerHTML = `
+        <div style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
+          Belum ada data kehadiran minggu ini.
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = names.map((nama) => {
+      const persen = Math.min(100, Math.round((byEmployee[nama] / workingDays) * 100));
+      return `
+        <div class="progress-row">
+          <div class="progress-row__top"><span>${nama}</span><strong class="mono">${persen}%</strong></div>
+          <div class="progress-track"><div class="progress-fill" style="width:${persen}%"></div></div>
+        </div>`;
+    }).join("");
+  }
+
+  /**
+   * Menunggu Chart.js selesai dimuat dari CDN sebelum menggambar
+   * grafik. Sebelumnya, kalau CDN lambat/gagal, kode langsung
+   * "return" diam-diam tanpa pemberitahuan apapun ke user — jadi
+   * grafik kelihatan kosong tanpa alasan yang jelas. Sekarang akan
+   * dicoba ulang beberapa kali, dan kalau tetap gagal baru muncul
+   * pesan error yang jelas.
+   * @param {Function} callback - dipanggil begitu Chart.js siap
+   */
+  function waitForChart(callback, attemptsLeft) {
+    if (attemptsLeft === undefined) attemptsLeft = 20; // ~5 detik (20 x 250ms)
+
+    if (typeof Chart !== "undefined") {
+      callback();
+      return;
+    }
+
+    if (attemptsLeft <= 0) {
+      console.error("Chart.js gagal dimuat dari CDN (cdnjs.cloudflare.com) setelah beberapa kali percobaan.");
+      window.showToast("Gagal memuat library grafik (Chart.js). Cek koneksi internet Anda.", "error");
+      return;
+    }
+
+    setTimeout(() => waitForChart(callback, attemptsLeft - 1), 250);
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const weeklyCanvas = document.getElementById("weeklyAttendanceChart");
     if (!weeklyCanvas) return; // bukan halaman Dashboard
@@ -309,16 +421,24 @@
       ? db.collection("attendance")
       : db.collection("attendance").where("nama", "==", CURRENT_EMPLOYEE.nama);
 
-    // Real-time listener — kartu & grafik otomatis update begitu ada
-    // check-in/check-out baru, tanpa perlu reload halaman.
+    // Real-time listener — kartu, timeline, ringkasan & grafik
+    // otomatis update begitu ada check-in/check-out baru, tanpa
+    // perlu reload halaman.
     query.onSnapshot((snapshot) => {
         const records = snapshot.docs.map((doc) => docToRecord(doc.data()));
         const today = new Date();
 
         renderTodayStats(records, today);
         renderStatCards(records, today);
-        buildWeeklyChart(records, today);
-        buildMonthlyChart(records, today);
+        renderTimeline(records, today);
+        renderWeeklySummary(records, today);
+
+        // Chart.js kadang belum siap saat snapshot pertama datang
+        // (misal koneksi CDN lambat) — tunggu dulu sebelum menggambar.
+        waitForChart(() => {
+          buildWeeklyChart(records, today);
+          buildMonthlyChart(records, today);
+        });
       }, (err) => {
         console.error("Gagal memuat statistik dashboard:", err);
         window.showToast("Gagal memuat statistik dashboard.", "error");
