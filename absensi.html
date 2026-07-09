@@ -37,6 +37,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/style.css">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -60,7 +64,7 @@
 
     <span class="sidebar__section-label">Menu</span>
     <nav class="nav-menu">
-      <a href="index.html" class="nav-menu__item">
+      <a href="index.html" class="nav-menu__item" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Dashboard</span>
       </a>
@@ -68,7 +72,7 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Absensi</span>
       </a>
-      <a href="riwayat.html" class="nav-menu__item">
+      <a href="riwayat.html" class="nav-menu__item" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Riwayat</span>
       </a>
@@ -182,23 +186,25 @@
         </div>
       </section>
 
-      <!-- Info Tambahan -->
+      <!-- Info Tambahan (hidden) -->
+      <!--
       <section class="panel" style="max-width: 600px; margin: var(--sp-6) auto 0;">
         <div style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height: 1.7;">
           <strong>Catatan:</strong>
           <ul style="padding-left: var(--sp-5); margin-top: var(--sp-2);">
-            <li>Check-in sebelum jam 08:15 dianggap Hadir</li>
-            <li>Check-in setelah jam 08:15 dianggap Terlambat</li>
+            <li>Check-in dianggap Hadir (tidak ada batas waktu)</li>
             <li>Tidak ada check-in di hari kerja dianggap Alpha</li>
             <li>Data tersimpan otomatis di browser</li>
           </ul>
         </div>
       </section>
+      -->
 
     </main>
   </div>
 </div>
 
+<script src="js/firebase-config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/attendance.js"></script>

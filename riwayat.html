@@ -37,6 +37,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -60,7 +65,7 @@
 
     <span class="sidebar__section-label">Menu</span>
     <nav class="nav-menu">
-      <a href="index.html" class="nav-menu__item">
+      <a href="index.html" class="nav-menu__item" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Dashboard</span>
       </a>
@@ -68,7 +73,7 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Absensi</span>
       </a>
-      <a href="riwayat.html" class="nav-menu__item is-active">
+      <a href="riwayat.html" class="nav-menu__item is-active" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Riwayat</span>
       </a>
@@ -127,7 +132,7 @@
       </div>
     </header>
 
-    <main class="content">
+    <main class="content" id="riwayat-content">
 
       <!-- Ringkasan otomatis -->
       <section class="stat-grid">
@@ -148,7 +153,7 @@
             </div>
           </div>
           <div class="stat-card__value mono" id="statTotalTelat">0</div>
-          <div class="stat-card__label">Total Terlambat</div>
+          <div class="stat-card__label">Total Alpha</div>
         </div>
 
         <div class="stat-card">
@@ -178,6 +183,10 @@
             <h2>Rekap Presensi</h2>
             <div class="panel__header-sub" id="riwayatPeriodeLabel">Menampilkan data hari ini</div>
           </div>
+          <button class="btn btn--secondary" data-download-pdf data-pdf-target="riwayat-content" data-menu-role="admin">
+            <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Download PDF
+          </button>
         </div>
 
         <div class="tab-row" id="filterTabs">
@@ -214,6 +223,7 @@
   </div>
 </div>
 
+<script src="js/firebase-config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/riwayat.js"></script>

@@ -61,31 +61,19 @@
 
 <script>
   document.getElementById('btnClear').addEventListener('click', function() {
-    // Hapus semua data terkait aplikasi
-    const keysToRemove = [];
-    
-    // Cari semua key yang berawalan dengan prefix aplikasi
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key.startsWith('localdb:') || key.startsWith('profile_') || 
-          key === 'session_user' || key === 'theme') {
-        keysToRemove.push(key);
-      }
-    }
-    
-    // Hapus semua key yang ditemukan
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+    // Hapus SEMUA data di localStorage (total wipe)
+    localStorage.clear();
     
     // Update UI
     const btn = document.getElementById('btnClear');
     const result = document.getElementById('result');
     
-    btn.textContent = 'Data Berhasil Dihapus!';
+    btn.textContent = 'Semua Data Berhasil Dihapus!';
     btn.className = 'success';
     btn.disabled = true;
     
     result.style.display = 'block';
-    result.innerHTML = `<p style="color: #2E9678; font-weight: 500;">${keysToRemove.length} data telah dihapus.</p>
+    result.innerHTML = `<p style="color: #2E9678; font-weight: 500;">Semua data localStorage telah dihapus.</p>
                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Silakan tutup halaman ini dan kembali ke <a href="login.html">login.html</a></p>`;
   });
 </script>
