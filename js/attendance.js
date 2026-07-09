@@ -12,9 +12,7 @@
     "Juli", "Agustus", "September", "Oktober", "November", "Desember"
   ];
   
-  // Batas waktu untuk dianggap hadir (08:15)
-  const LATE_THRESHOLD_HOUR = 8;
-  const LATE_THRESHOLD_MINUTE = 15;
+  // Tidak ada batas waktu - semua check-in dianggap hadir
   
   /** Menambahkan angka nol di depan kalau kurang dari 2 digit. @param {number} n @returns {string} */
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -51,14 +49,9 @@
     return `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   }
   
-  /** Menentukan status berdasarkan jam check-in. @param {Date} checkInTime @returns {"hadir"|"telat"} */
+  /** Menentukan status - semua check-in dianggap hadir. @param {Date} checkInTime @returns {"hadir"} */
   function determineStatus(checkInTime) {
-    const hour = checkInTime.getHours();
-    const minute = checkInTime.getMinutes();
-    
-    if (hour < LATE_THRESHOLD_HOUR) return "hadir";
-    if (hour === LATE_THRESHOLD_HOUR && minute <= LATE_THRESHOLD_MINUTE) return "hadir";
-    return "telat";
+    return "hadir";
   }
   
   /** ID record untuk hari ini: "{username}_{YYYY-MM-DD}" */
@@ -99,7 +92,7 @@
     }
     
     const checkInDate = new Date(data.checkIn);
-    checkInStatus.textContent = data.status === "telat" ? "Terlambat" : "Hadir";
+    checkInStatus.textContent = "Hadir";
     checkInTime.textContent = formatClock(checkInDate);
     
     if (!data.checkOut) {
@@ -175,8 +168,7 @@
       
       await db.collection("attendance").doc(recordId).set(data, { merge: true });
       
-      const statusText = status === "telat" ? "terlambat" : "hadir";
-      window.showToast(`Check-in berhasil! Anda ${statusText}.`, "success");
+      window.showToast(`Check-in berhasil! Anda hadir.`, "success");
       
     } catch (error) {
       console.error("Check-in error:", error);

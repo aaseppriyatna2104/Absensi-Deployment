@@ -94,7 +94,7 @@
 
   /**
    * Menghitung & menampilkan 4 kartu ringkasan bulan berjalan:
-   * Total Hadir, Total Jam Kerja, Total Terlambat, Persentase Kehadiran.
+   * Total Hadir, Total Jam Kerja, Total Alpha, Persentase Kehadiran.
    * @param {Array<object>} records - seluruh record presensi karyawan
    * @param {Date} today
    */
@@ -108,7 +108,6 @@
     });
 
     const totalHadir = monthRecords.filter((r) => r.checkIn).length;
-    const totalTelat = monthRecords.filter((r) => r.status === "telat").length;
     const totalDetik = monthRecords.reduce((sum, r) => {
       return sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0);
     }, 0);
@@ -122,6 +121,9 @@
       ? Math.min(100, Math.round((totalHadir / denominator) * 100))
       : 0;
 
+    // Hitung alpha: jumlah hari kerja dikali jumlah karyawan dikurangi total hadir
+    const totalAlpha = Math.max(0, denominator - totalHadir);
+
     /** Helper kecil: set textContent kalau elemennya ada. @param {string} id @param {string|number} val */
     const setText = (id, val) => {
       const el = document.getElementById(id);
@@ -130,13 +132,13 @@
 
     setText("dashStatHadir", totalHadir);
     setText("dashStatJamKerja", formatDuration(totalDetik));
-    setText("dashStatTelat", totalTelat);
+    setText("dashStatTelat", totalAlpha);
     setText("dashStatPersentase", `${persentase}%`);
   }
 
   /**
    * Menghitung & menampilkan 4 kartu ringkasan hari ini:
-   * Hadir hari ini, Terlambat hari ini, Total jam kerja hari ini, Alpha hari ini.
+   * Hadir hari ini, Alpha hari ini, Total jam kerja hari ini.
    * @param {Array<object>} records - seluruh record presensi karyawan
    * @param {Date} today
    */
@@ -150,7 +152,6 @@
     });
 
     const todayHadir = todayRecords.filter((r) => r.checkIn).length;
-    const todayTelat = todayRecords.filter((r) => r.status === "telat").length;
     const todayDetik = todayRecords.reduce((sum, r) => {
       return sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0);
     }, 0);
@@ -167,14 +168,14 @@
     };
 
     setText("todayHadir", todayHadir);
-    setText("todayTelat", todayTelat);
+    setText("todayTelat", todayAlpha);
     setText("todayJamKerja", formatDuration(todayDetik));
-    setText("todayAlpha", todayAlpha);
+    setText("todayAlpha", 0);
   }
 
   /**
    * Menggambar grafik bar bertumpuk "Kehadiran Mingguan" (Senin–Minggu,
-   * minggu berjalan): tiap hari menunjukkan Hadir/Terlambat/Alpha.
+   * minggu berjalan): tiap hari menunjukkan Hadir/Alpha.
    * @param {Array<object>} records
    * @param {Date} today
    */
@@ -184,7 +185,6 @@
 
     const weekStart = startOfWeek(today);
     const hadirData = [];
-    const telatData = [];
     const alphaData = [];
 
     for (let i = 0; i < 7; i++) {
@@ -197,12 +197,10 @@
       // yang datanya bisa berisi check-in beberapa karyawan di hari yang sama.
       const dayRecords = records.filter((r) => sameDate(r.date, day) && r.checkIn);
 
-      const hadir = dayRecords.filter((r) => r.status !== "telat").length;
-      const telat = dayRecords.filter((r) => r.status === "telat").length;
+      const hadir = dayRecords.length;
       const alpha = (!isWeekend && !isFuture && dayRecords.length === 0) ? 1 : 0;
 
       hadirData.push(hadir);
-      telatData.push(telat);
       alphaData.push(alpha);
     }
 
@@ -213,7 +211,6 @@
         labels: DAY_LABELS_SHORT,
         datasets: [
           { label: "Hadir", data: hadirData, backgroundColor: "#2E9678", borderRadius: 4, maxBarThickness: 28 },
-          { label: "Terlambat", data: telatData, backgroundColor: "#E8A33D", borderRadius: 4, maxBarThickness: 28 },
           { label: "Alpha", data: alphaData, backgroundColor: "#D9534F", borderRadius: 4, maxBarThickness: 28 },
         ],
       },

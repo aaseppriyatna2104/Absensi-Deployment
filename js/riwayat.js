@@ -104,9 +104,6 @@
     if (!record.checkIn) {
       return '<span class="status-badge status-badge--alpha">Alpha</span>';
     }
-    if (record.status === "telat") {
-      return '<span class="status-badge status-badge--telat">Telat</span>';
-    }
     return '<span class="status-badge status-badge--hadir">Hadir</span>';
   }
 
@@ -141,7 +138,7 @@
 
   /**
    * Menghitung & menampilkan 4 kartu ringkasan (Total Hadir, Total
-   * Terlambat, Total Jam Kerja, Persentase Kehadiran) untuk daftar
+   * Alpha, Total Jam Kerja, Persentase Kehadiran) untuk daftar
    * record yang sudah difilter.
    *
    * Untuk admin, `records` bisa berisi data BANYAK karyawan
@@ -153,7 +150,6 @@
    */
   function renderStats(records, workingDays) {
     const totalHadir = records.filter((r) => r.checkIn).length;
-    const totalTelat = records.filter((r) => r.status === "telat").length;
     const totalDetik = records.reduce((sum, r) => sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0), 0);
 
     const uniqueEmployeeCount = new Set(records.map((r) => r.nama)).size || 1;
@@ -162,8 +158,11 @@
       ? Math.min(100, Math.round((totalHadir / denominator) * 100))
       : 0;
 
+    // Hitung alpha: jumlah hari kerja dikali jumlah karyawan dikurangi total hadir
+    const totalAlpha = Math.max(0, denominator - totalHadir);
+
     document.getElementById("statTotalHadir").textContent = totalHadir;
-    document.getElementById("statTotalTelat").textContent = totalTelat;
+    document.getElementById("statTotalTelat").textContent = totalAlpha;
     document.getElementById("statTotalJamKerja").textContent = formatDuration(totalDetik);
     document.getElementById("statPersentase").textContent = `${persentase}%`;
   }
