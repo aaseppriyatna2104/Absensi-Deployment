@@ -174,23 +174,30 @@
     const element = document.createElement('div');
     element.innerHTML = reportHTML;
     element.style.position = 'fixed';
-    element.style.left = '-9999px';
+    element.style.left = '0';
     element.style.top = '0';
+    element.style.zIndex = '9999';
     element.style.width = '210mm'; // A4 width
     element.style.background = 'white';
+    element.style.padding = '20px';
+    element.style.opacity = '0'; // Invisible but still renderable
+    element.style.pointerEvents = 'none'; // Don't block interactions
     document.body.appendChild(element);
 
     console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
 
-    html2pdf().set(opt).from(element).save().then(() => {
-      console.log("PDF saved successfully");
-      document.body.removeChild(element);
-      window.showToast("Laporan PDF berhasil diunduh!", "success");
-    }).catch(err => {
-      console.error("PDF generation error:", err);
-      document.body.removeChild(element);
-      window.showToast("Gagal membuat laporan PDF: " + err.message, "error");
-    });
+    // Small delay to ensure element is rendered
+    setTimeout(() => {
+      html2pdf().set(opt).from(element).save().then(() => {
+        console.log("PDF saved successfully");
+        document.body.removeChild(element);
+        window.showToast("Laporan PDF berhasil diunduh!", "success");
+      }).catch(err => {
+        console.error("PDF generation error:", err);
+        document.body.removeChild(element);
+        window.showToast("Gagal membuat laporan PDF: " + err.message, "error");
+      });
+    }, 100);
   }
 
   // Export function to global scope
