@@ -96,9 +96,11 @@
 
     const checkInEl = document.getElementById("editCheckIn");
     const checkOutEl = document.getElementById("editCheckOut");
+    const totalJamEl = document.getElementById("editTotalJam");
 
     checkInEl.value = record.checkIn ? formatClock(new Date(record.checkIn)) : "";
     checkOutEl.value = record.checkOut ? formatClock(new Date(record.checkOut)) : "";
+    totalJamEl.value = record.totalJamKerjaDetik ? formatDuration(record.totalJamKerjaDetik) : "";
 
     document.getElementById("editModal").classList.add("is-open");
   }
@@ -138,12 +140,24 @@
     try {
       const checkInStr = document.getElementById("editCheckIn").value;
       const checkOutStr = document.getElementById("editCheckOut").value;
+      const totalJamStr = document.getElementById("editTotalJam").value;
 
       const newCheckIn = combineDateTime(record.tanggal, checkInStr);
       const newCheckOut = combineDateTime(record.tanggal, checkOutStr);
 
       let totalJamKerjaDetik = 0;
-      if (newCheckIn && newCheckOut) {
+      
+      // Parse total jam dari input field jika diisi manual
+      if (totalJamStr && totalJamStr.trim()) {
+        const parts = totalJamStr.trim().split(":").map(Number);
+        if (parts.length >= 2) {
+          const h = parts[0] || 0;
+          const m = parts[1] || 0;
+          const s = parts[2] || 0;
+          totalJamKerjaDetik = (h * 3600) + (m * 60) + s;
+        }
+      } else if (newCheckIn && newCheckOut) {
+        // Jika total jam tidak diisi manual, hitung dari check-in dan check-out
         totalJamKerjaDetik = Math.max(0, Math.floor((new Date(newCheckOut) - new Date(newCheckIn)) / 1000));
       }
 
