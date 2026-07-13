@@ -359,7 +359,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
   if (!isAdmin) {
     // Staff hanya boleh akses absensi.html dan profil.html
-    const allowedPages = ["absensi.html", "profil.html"];
+    const allowedPages = ["absensi.html", "profil.html", "jadwal.html"];
     if (!allowedPages.includes(currentPage)) {
       window.location.href = "absensi.html";
     }
