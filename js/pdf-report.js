@@ -101,12 +101,26 @@
 
     // Generate HTML for PDF
     const reportHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 30px; color: #333; background: white; width: 100%;">
+      <div style="font-family: Arial, sans-serif; padding: 30px; color: #333; background: white; width: 100%; box-sizing: border-box;">
+        <!-- Kop Surat -->
+        <div style="display:flex; align-items:center; justify-content:space-between; border-bottom: 4px solid #2E9678; padding-bottom: 14px; margin-bottom: 20px;">
+          <div style="display:flex; align-items:center; gap:14px;">
+            <div style="width:48px; height:48px; border-radius:10px; background:#2E9678; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:18px; font-family: 'Courier New', monospace;">RA</div>
+            <div>
+              <div style="font-size:16px; font-weight:bold; color:#1e293b;">PT. Jalan Terus Saja</div>
+              <div style="font-size:11px; color:#64748b;">Recharge Indonesia — Operasional Jakarta</div>
+            </div>
+          </div>
+          <div style="text-align:right; font-size:10px; color:#94a3b8;">
+            Dicetak: ${formatDate(new Date())}<br>${formatClock(new Date())} WIB
+          </div>
+        </div>
+
         <!-- Header -->
-        <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2E9678; padding-bottom: 15px;">
-          <h1 style="margin: 0; color: #1e293b; font-size: 22px; font-weight: bold;">LAPORAN KEHADIRAN KARYAWAN</h1>
-          <h2 style="margin: 8px 0 0 0; color: #64748b; font-size: 14px; font-weight: normal;">Recharge Absensi - Operasional Jakarta</h2>
-          <p style="margin: 5px 0 0 0; color: #666; font-size: 12px;">${period}</p>
+        <div style="text-align: center; margin-bottom: 25px;">
+          <h1 style="margin: 0; color: #1e293b; font-size: 20px; font-weight: bold; letter-spacing:0.5px;">LAPORAN KEHADIRAN KARYAWAN</h1>
+          <p style="margin: 6px 0 0 0; color: #666; font-size: 12px;">${title}</p>
+          <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 11px;">${period}</p>
         </div>
 
         <!-- Summary Statistics -->
@@ -147,10 +161,25 @@
           </table>
         </div>
 
+        <!-- Tanda Tangan -->
+        <div style="display:flex; justify-content:space-between; margin-top: 50px; font-size: 12px; color:#1e293b;">
+          <div style="text-align:center; width: 220px;">
+            <div>Dibuat oleh,</div>
+            <div style="height: 70px;"></div>
+            <div style="border-top: 1px solid #333; padding-top: 6px;">( .......................... )</div>
+            <div style="font-size:10px; color:#666; margin-top:2px;">Admin Operasional</div>
+          </div>
+          <div style="text-align:center; width: 220px;">
+            <div>Mengetahui,</div>
+            <div style="height: 70px;"></div>
+            <div style="border-top: 1px solid #333; padding-top: 6px;">( .......................... )</div>
+            <div style="font-size:10px; color:#666; margin-top:2px;">Manajer Operasional</div>
+          </div>
+        </div>
+
         <!-- Footer -->
         <div style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #ddd; text-align: center; font-size: 10px; color: #666;">
           <p style="margin: 0;">Laporan ini dibuat secara otomatis oleh sistem Recharge Absensi</p>
-          <p style="margin: 5px 0 0 0;">Tanggal cetak: ${formatDate(new Date())} ${formatClock(new Date())}</p>
           <p style="margin: 5px 0 0 0;">Total data: ${sortedRecords.length} record</p>
         </div>
       </div>
@@ -161,32 +190,34 @@
 
     // PDF configuration
     const opt = {
-      margin: 15,
+      margin: 10,
       filename: `Laporan_Kehadiran_${new Date().toISOString().split('T')[0]}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, logging: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     console.log("Starting PDF generation");
 
-    // Generate and download PDF
+    // Generate and download PDF.
+    // PENTING: elemen HARUS tetap terlihat (visibility/opacity normal)
+    // supaya html2canvas bisa menggambar isinya dengan benar — kalau
+    // opacity di-set 0, hasil capture-nya jadi halaman kosong/blank.
+    // Solusinya: taruh elemen di luar area layar (bukan disembunyikan).
     const element = document.createElement('div');
     element.innerHTML = reportHTML;
     element.style.position = 'fixed';
-    element.style.left = '0';
+    element.style.left = '-10000px'; // di luar viewport, bukan opacity 0
     element.style.top = '0';
-    element.style.zIndex = '9999';
+    element.style.zIndex = '-1';
     element.style.width = '210mm'; // A4 width
-    element.style.background = 'white';
-    element.style.padding = '20px';
-    element.style.opacity = '0'; // Invisible but still renderable
-    element.style.pointerEvents = 'none'; // Don't block interactions
+    element.style.background = '#ffffff';
     document.body.appendChild(element);
 
     console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
 
-    // Small delay to ensure element is rendered
+    // Small delay to ensure element is rendered/laid out before capture
     setTimeout(() => {
       html2pdf().set(opt).from(element).save().then(() => {
         console.log("PDF saved successfully");
@@ -197,7 +228,7 @@
         document.body.removeChild(element);
         window.showToast("Gagal membuat laporan PDF: " + err.message, "error");
       });
-    }, 100);
+    }, 150);
   }
 
   // Export function to global scope
