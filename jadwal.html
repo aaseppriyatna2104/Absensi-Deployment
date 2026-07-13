@@ -201,6 +201,23 @@
     margin-bottom: var(--sp-5);
   }
   .modal-card .form-field { margin-bottom: var(--sp-4); }
+  .modal-card textarea {
+    width: 100%;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    font-size: var(--fs-sm);
+    font-family: var(--font-body);
+    color: var(--color-text);
+    background: var(--color-surface-alt);
+    resize: vertical;
+    min-height: 88px;
+    box-sizing: border-box;
+  }
+  .modal-card textarea:focus {
+    outline: 2px solid var(--color-teal-500);
+    outline-offset: 1px;
+  }
   .modal-card__actions {
     display: flex;
     gap: var(--sp-3);
@@ -381,7 +398,8 @@
       </div>
       <div class="form-field">
         <label for="eventDeskripsi">Deskripsi (opsional)</label>
-        <input type="text" id="eventDeskripsi" placeholder="Catatan tambahan...">
+        <textarea id="eventDeskripsi" rows="4" placeholder="Satu baris = satu poin, mis.&#10;Bawa laptop&#10;Siapkan laporan mingguan&#10;Ruang meeting lt. 3"></textarea>
+        <span style="display:block; font-size: var(--fs-xs); color: var(--color-text-faint); margin-top: 4px;">Tekan Enter untuk poin baru.</span>
       </div>
 
       <div class="modal-card__actions">
@@ -398,7 +416,7 @@
   <div class="modal-card">
     <h3 id="viewEventTitle">Judul Kegiatan</h3>
     <div class="modal-card__sub" id="viewEventDate">...</div>
-    <p id="viewEventDesc" style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height:1.6; margin-bottom: var(--sp-5);"></p>
+    <ul id="viewEventDesc" style="font-size: var(--fs-sm); color: var(--color-text-muted); line-height:1.7; margin-bottom: var(--sp-5); padding-left: var(--sp-5); list-style: disc;"></ul>
     <div class="modal-card__actions">
       <button type="button" class="btn btn--secondary" id="btnCloseView" style="flex:1;">Tutup</button>
     </div>
