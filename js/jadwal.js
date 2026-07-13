@@ -278,7 +278,13 @@
   function openViewModal(ev) {
     document.getElementById("viewEventTitle").textContent = ev.judul || "(Tanpa judul)";
     document.getElementById("viewEventDate").textContent = formatShortDate(ev.tanggal);
-    document.getElementById("viewEventDesc").textContent = ev.deskripsi || "Tidak ada deskripsi tambahan.";
+
+    const descList = document.getElementById("viewEventDesc");
+    const lines = (ev.deskripsi || "").split("\n").map((l) => l.trim()).filter(Boolean);
+    descList.innerHTML = lines.length
+      ? lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")
+      : `<li style="list-style:none; padding-left:0;">Tidak ada deskripsi tambahan.</li>`;
+
     document.getElementById("viewEventModal").classList.add("is-open");
   }
 
