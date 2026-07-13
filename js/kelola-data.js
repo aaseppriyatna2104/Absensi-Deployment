@@ -270,5 +270,44 @@
 
     // Hapus semua
     document.getElementById("btnHapusSemua").addEventListener("click", handleDeleteAll);
+
+    // PDF Download button handler
+    const pdfBtn = document.getElementById("btnDownloadPDF");
+    console.log("PDF button found:", pdfBtn);
+    if (pdfBtn) {
+      pdfBtn.addEventListener("click", () => {
+        console.log("PDF button clicked");
+        console.log("allRecords:", allRecords);
+        console.log("generateAttendanceReport function:", typeof window.generateAttendanceReport);
+        
+        const searchTerm = document.getElementById("searchInput").value;
+        let records = allRecords.slice().sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+        if (searchTerm) {
+          const term = searchTerm.trim().toLowerCase();
+          records = records.filter((r) => r.nama.toLowerCase().includes(term));
+        }
+
+        console.log("Filtered records:", records.length);
+
+        if (records.length === 0) {
+          window.showToast("Tidak ada data untuk diexport ke PDF.", "info");
+          return;
+        }
+
+        if (typeof window.generateAttendanceReport === "function") {
+          console.log("Calling generateAttendanceReport");
+          window.generateAttendanceReport(
+            records,
+            "Laporan Semua Data Presensi",
+            `Menampilkan ${records.length} data presensi`
+          );
+        } else {
+          console.error("generateAttendanceReport function not available");
+          window.showToast("Fungsi PDF tidak tersedia.", "error");
+        }
+      });
+    } else {
+      console.error("PDF button not found in DOM");
+    }
   });
 })();
