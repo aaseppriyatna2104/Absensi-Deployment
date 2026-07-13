@@ -205,24 +205,39 @@
     try {
       const now = new Date();
       
-      // Cari record check-in terakhir yang belum di-check-out (bisa dari hari sebelumnya)
-      console.log("Searching for most recent unchecked-in record...");
-      const snapshot = await db.collection("attendance")
-        .where("nama", "==", CURRENT_EMPLOYEE.nama)
-        .where("checkOut", "==", null)
-        .orderBy("checkIn", "desc")
-        .limit(1)
-        .get();
+      // Cek record hari ini dulu
+      const todayRecordId = getTodayRecordId();
+      const todayDoc = await db.collection("attendance").doc(todayRecordId).get();
       
-      if (snapshot.empty) {
-        window.showToast("Data check-in tidak ditemukan.", "error");
-        window.setButtonLoading(btn, false);
-        return;
+      let recordId, data;
+      
+      if (todayDoc.exists && todayDoc.data().checkIn && !todayDoc.data().checkOut) {
+        // Ada check-in aktif hari ini
+        recordId = todayRecordId;
+        data = todayDoc.data();
+      } else {
+        // Cari record check-in terakhir yang belum di-check-out dari hari sebelumnya
+        console.log("Searching for most recent unchecked-in record...");
+        const snapshot = await db.collection("attendance")
+          .where("nama", "==", CURRENT_EMPLOYEE.nama)
+          .where("checkOut", "==", null)
+          .get();
+        
+        if (snapshot.empty) {
+          window.showToast("Data check-in tidak ditemukan.", "error");
+          window.setButtonLoading(btn, false);
+          return;
+        }
+        
+        // Sort di client-side untuk mencari yang terbaru
+        const docs = snapshot.docs;
+        docs.sort((a, b) => new Date(b.data().checkIn) - new Date(a.data().checkIn));
+        
+        const doc = docs[0];
+        recordId = doc.id;
+        data = doc.data();
       }
       
-      const doc = snapshot.docs[0];
-      const recordId = doc.id;
-      const data = doc.data();
       const checkInDate = new Date(data.checkIn);
       const totalDetik = Math.floor((now - checkInDate) / 1000);
       
@@ -283,12 +298,14 @@
       const snapshot = await db.collection("attendance")
         .where("nama", "==", CURRENT_EMPLOYEE.nama)
         .where("checkOut", "==", null)
-        .orderBy("checkIn", "desc")
-        .limit(1)
         .get();
       
       if (!snapshot.empty) {
-        const data = snapshot.docs[0].data();
+        // Sort di client-side untuk mencari yang terbaru
+        const docs = snapshot.docs;
+        docs.sort((a, b) => new Date(b.data().checkIn) - new Date(a.data().checkIn));
+        
+        const data = docs[0].data();
         updateUI(data);
       } else {
         // Tidak ada check-in aktif sama sekali
