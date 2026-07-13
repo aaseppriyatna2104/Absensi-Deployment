@@ -262,5 +262,37 @@
       currentFilter = target.getAttribute("data-filter");
       applyFilter(currentFilter, allRecords);
     });
+
+    // PDF Download button handler
+    const pdfBtn = document.querySelector("[data-download-pdf]");
+    if (pdfBtn) {
+      pdfBtn.addEventListener("click", () => {
+        const { label } = getRange(currentFilter, new Date());
+        const today = new Date();
+        const { start } = getRange(currentFilter, today);
+        const end = startOfDay(today);
+        
+        const filtered = allRecords.filter((r) => {
+          const d = startOfDay(r.date);
+          return d >= start && d <= end;
+        });
+
+        // Convert records back to raw data format for PDF generator
+        const rawData = filtered.map(r => ({
+          tanggal: r.date.toISOString().split('T')[0],
+          nama: r.nama,
+          checkIn: r.checkIn ? r.checkIn.toISOString() : null,
+          checkOut: r.checkOut ? r.checkOut.toISOString() : null,
+          totalJamKerjaDetik: r.totalJamKerjaDetik,
+          status: r.status
+        }));
+
+        if (typeof window.generateAttendanceReport === "function") {
+          window.generateAttendanceReport(rawData, "Laporan Kehadiran", label);
+        } else {
+          window.showToast("Fungsi PDF tidak tersedia.", "error");
+        }
+      });
+    }
   });
 })();
