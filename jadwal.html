@@ -57,8 +57,8 @@
     gap: var(--sp-2);
   }
   .cal-toolbar__nav-btn {
-    width: 34px;
-    height: 34px;
+    width: 38px;
+    height: 38px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--color-border);
     background: var(--color-surface);
@@ -235,6 +235,93 @@
     .cal-cell { min-height: 80px; }
     .cal-grid__head { padding: var(--sp-2) 4px; font-size: 10px; }
   }
+
+  /* ===== Responsif untuk Android/HP ===== */
+  @media (max-width: 640px) {
+    .panel__header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--sp-3);
+    }
+    #btnAddEvent { width: 100%; justify-content: center; }
+
+    .cal-toolbar {
+      justify-content: space-between;
+    }
+    .cal-toolbar__nav { flex: 1; justify-content: space-between; }
+    .cal-toolbar__month-label { min-width: 0; flex: 1; font-size: var(--fs-base); }
+    .cal-toolbar__spacer { display: none; }
+    #btnToday {
+      width: 100%;
+      order: 3;
+    }
+
+    .cal-legend { font-size: 11px; line-height: 1.5; }
+
+    /* Grid jadi lebih ramping: fokus ke titik penanda + jumlah,
+       bukan judul penuh (biar tidak "hancur" di layar sempit) —
+       ketuk tanggalnya untuk lihat detail agenda hari itu. */
+    .cal-grid__head { font-size: 9px; padding: 6px 2px; }
+    .cal-cell {
+      min-height: 56px;
+      padding: 4px;
+      gap: 2px;
+    }
+    .cal-cell__date {
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
+    }
+    .cal-cell__events { gap: 2px; }
+    .cal-event {
+      font-size: 10px;
+      padding: 2px 4px;
+    }
+    /* Tombol "+ jadwal" hover tidak berguna di layar sentuh —
+       sembunyikan, diganti tap-tanggal untuk buka agenda hari itu. */
+    .cal-cell__add-btn.is-admin { display: none !important; }
+  }
+
+  @media (max-width: 400px) {
+    .cal-cell { min-height: 48px; }
+    .cal-event {
+      /* Di layar sangat sempit, tampilkan sebagai titik + jumlah saja */
+      white-space: normal;
+    }
+  }
+
+  /* ===== Modal Agenda Harian (tap tanggal, dipakai semua ukuran layar) ===== */
+  .day-modal__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    max-height: 40vh;
+    overflow-y: auto;
+    margin-bottom: var(--sp-4);
+  }
+  .day-modal__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-3);
+    background: var(--color-surface-alt);
+    border-left: 3px solid var(--color-teal-500);
+    border-radius: var(--radius-sm);
+    padding: 10px 12px;
+    cursor: pointer;
+  }
+  .day-modal__item:active { background: var(--color-teal-100); }
+  .day-modal__item-title {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--color-text);
+  }
+  .day-modal__empty {
+    text-align: center;
+    color: var(--color-text-faint);
+    font-size: var(--fs-sm);
+    padding: var(--sp-5) 0;
+  }
 </style>
 </head>
 <body>
@@ -377,6 +464,23 @@
       </section>
 
     </main>
+  </div>
+</div>
+
+<!-- ============ MODAL AGENDA HARIAN (tap tanggal — ramah HP) ============ -->
+<div class="modal-backdrop" id="dayModal">
+  <div class="modal-card">
+    <h3 id="dayModalTitle">Agenda</h3>
+    <div class="modal-card__sub" id="dayModalSub">...</div>
+
+    <div class="day-modal__list" id="dayModalList"></div>
+
+    <div class="modal-card__actions">
+      <button type="button" class="btn btn--secondary" id="btnCloseDayModal">Tutup</button>
+      <button type="button" class="btn btn--primary" id="btnAddFromDayModal" style="display:none;">
+        + Tambah Jadwal
+      </button>
+    </div>
   </div>
 </div>
 
