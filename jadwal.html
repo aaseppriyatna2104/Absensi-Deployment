@@ -30,7 +30,7 @@
     }
   })();
 </script>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Jadwal — Absensi Karyawan</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -238,16 +238,39 @@
 
   /* ===== Responsif untuk Android/HP ===== */
   @media (max-width: 768px) {
+    .app-shell {
+      flex-direction: column;
+    }
+    .sidebar {
+      display: none;
+    }
+    .main-col {
+      width: 100%;
+      padding: 0;
+      margin: 0;
+    }
+    .content {
+      padding: 0;
+      width: 100%;
+    }
+    .panel {
+      margin: 0;
+      border-radius: 0;
+      border: none;
+      width: 100%;
+    }
     .panel__header {
       flex-direction: column;
       align-items: stretch;
       gap: var(--sp-3);
+      padding: var(--sp-4);
     }
     #btnAddEvent { width: 100%; justify-content: center; }
 
     .cal-toolbar {
       flex-wrap: wrap;
       gap: var(--sp-2);
+      padding: 0 var(--sp-4);
     }
     .cal-toolbar__nav { flex: 1; justify-content: space-between; }
     .cal-toolbar__month-label { 
@@ -270,38 +293,55 @@
       flex-direction: column;
       align-items: flex-start;
       gap: 4px;
+      padding: 0 var(--sp-4);
     }
 
     /* Grid jadi lebih ramping: fokus ke titik penanda + jumlah,
        bukan judul penuh (biar tidak "hancur" di layar sempit) —
        ketuk tanggalnya untuk lihat detail agenda hari itu. */
     .cal-grid {
-      gap: 1px;
+      gap: 0;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 14.28% 14.28% 14.28% 14.28% 14.28% 14.28% 14.28%;
+      border: 1px solid var(--color-border);
     }
     .cal-grid__head { 
       font-size: 10px; 
-      padding: 8px 4px;
+      padding: 8px 1px;
       font-weight: 600;
+      text-align: center;
+      border-bottom: 1px solid var(--color-border);
     }
     .cal-cell {
       min-height: 70px;
-      padding: 6px 4px;
-      gap: 3px;
+      padding: 4px 1px;
+      gap: 2px;
+      box-sizing: border-box;
+      border-right: 1px solid var(--color-border);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .cal-cell:last-child {
+      border-right: none;
     }
     .cal-cell__date {
-      width: 26px;
-      height: 26px;
-      font-size: 13px;
+      width: 24px;
+      height: 24px;
+      font-size: 12px;
     }
     .cal-cell__events { 
       gap: 2px;
       overflow-y: auto;
+      flex: 1;
     }
     .cal-event {
-      font-size: 10px;
-      padding: 3px 6px;
+      font-size: 9px;
+      padding: 2px 4px;
       line-height: 1.2;
       max-width: 100%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     /* Tombol "+ jadwal" hover tidak berguna di layar sentuh —
        sembunyikan, diganti tap-tanggal untuk buka agenda hari itu. */
@@ -309,23 +349,36 @@
   }
 
   @media (max-width: 480px) {
+    .panel__header {
+      padding: var(--sp-3);
+    }
+    .cal-toolbar {
+      padding: 0 var(--sp-3);
+    }
+    .cal-legend {
+      padding: 0 var(--sp-3);
+    }
+    .cal-grid {
+      gap: 0;
+    }
     .cal-grid__head { 
       font-size: 9px; 
-      padding: 6px 2px;
+      padding: 6px 1px;
+      text-align: center;
     }
     .cal-cell {
-      min-height: 60px;
-      padding: 4px 2px;
-      gap: 2px;
+      min-height: 55px;
+      padding: 3px 1px;
+      gap: 1px;
     }
     .cal-cell__date {
-      width: 22px;
-      height: 22px;
-      font-size: 11px;
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
     }
     .cal-event {
-      font-size: 9px;
-      padding: 2px 4px;
+      font-size: 8px;
+      padding: 2px 3px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -333,16 +386,16 @@
   }
 
   @media (max-width: 360px) {
-    .cal-cell { min-height: 50px; }
+    .cal-cell { min-height: 45px; }
     .cal-cell__date {
-      width: 20px;
-      height: 20px;
-      font-size: 10px;
+      width: 18px;
+      height: 18px;
+      font-size: 9px;
     }
     .cal-event {
       /* Di layar sangat sempit, tampilkan sebagai indikator saja */
-      padding: 2px 3px;
-      font-size: 8px;
+      padding: 1px 2px;
+      font-size: 7px;
     }
   }
 
