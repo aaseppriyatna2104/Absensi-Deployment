@@ -278,6 +278,8 @@
       pdfBtn.addEventListener("click", () => {
         console.log("PDF button clicked");
         console.log("allRecords:", allRecords);
+        console.log("allRecords length:", allRecords.length);
+        console.log("First record sample:", allRecords[0]);
         console.log("generateAttendanceReport function:", typeof window.generateAttendanceReport);
         
         const searchTerm = document.getElementById("searchInput").value;
@@ -288,16 +290,30 @@
         }
 
         console.log("Filtered records:", records.length);
+        console.log("Filtered records sample:", records[0]);
 
         if (records.length === 0) {
           window.showToast("Tidak ada data untuk diexport ke PDF.", "info");
           return;
         }
 
+        // Convert records to the format expected by PDF function
+        const pdfRecords = records.map(r => ({
+          tanggal: r.tanggal,
+          nama: r.nama,
+          checkIn: r.checkIn,
+          checkOut: r.checkOut,
+          totalJamKerjaDetik: r.totalJamKerjaDetik,
+          status: r.status
+        }));
+
+        console.log("PDF records prepared:", pdfRecords.length);
+        console.log("PDF records sample:", pdfRecords[0]);
+
         if (typeof window.generateAttendanceReport === "function") {
           console.log("Calling generateAttendanceReport");
           window.generateAttendanceReport(
-            records,
+            pdfRecords,
             "Laporan Semua Data Presensi",
             `Menampilkan ${records.length} data presensi`
           );

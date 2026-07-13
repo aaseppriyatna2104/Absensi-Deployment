@@ -40,6 +40,7 @@
    */
   function generateAttendanceReport(records, title, period) {
     console.log("generateAttendanceReport called with", records.length, "records");
+    console.log("Records data:", JSON.stringify(records, null, 2));
     
     if (typeof html2pdf === "undefined") {
       window.showToast("Library PDF tidak tersedia. Cek koneksi internet.", "error");
@@ -69,9 +70,38 @@
 
     console.log("Stats - Hadir:", totalHadir, "Alpha:", totalAlpha, "Total Detik:", totalDetik);
 
+    // Generate table rows HTML
+    let tableRows = '';
+    sortedRecords.forEach((record, index) => {
+      console.log("Processing record", index, ":", record);
+      const date = new Date(record.tanggal);
+      const dayName = DAY_NAMES[date.getDay()];
+      const checkInTime = record.checkIn ? formatClock(new Date(record.checkIn)) : "-";
+      const checkOutTime = record.checkOut ? formatClock(new Date(record.checkOut)) : "-";
+      const workTime = record.checkIn && record.checkOut ? formatDuration(record.totalJamKerjaDetik || 0) : "-";
+      const status = record.checkIn ? "Hadir" : "Alpha";
+      const statusColor = status === "Hadir" ? "#2E9678" : "#D9534F";
+      const bgColor = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
+      
+      tableRows += `
+        <tr style="background: ${bgColor};">
+          <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center;">${index + 1}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px;">${formatDate(date)}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px;">${dayName}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px;">${record.nama || "-"}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px;">${checkInTime}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px;">${checkOutTime}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px;">${workTime}</td>
+          <td style="border: 1px solid #dee2e6; padding: 6px; color: ${statusColor}; font-weight: bold; text-align: center;">${status}</td>
+        </tr>
+      `;
+    });
+
+    console.log("Table rows generated, length:", tableRows.length);
+
     // Generate HTML for PDF
     const reportHTML = `
-      <div style="font-family: Arial, sans-serif; padding: 30px; color: #333; background: white;">
+      <div style="font-family: Arial, sans-serif; padding: 30px; color: #333; background: white; width: 100%;">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #2E9678; padding-bottom: 15px;">
           <h1 style="margin: 0; color: #1e293b; font-size: 22px; font-weight: bold;">LAPORAN KEHADIRAN KARYAWAN</h1>
@@ -112,29 +142,7 @@
               </tr>
             </thead>
             <tbody>
-              ${sortedRecords.map((record, index) => {
-                const date = new Date(record.tanggal);
-                const dayName = DAY_NAMES[date.getDay()];
-                const checkInTime = record.checkIn ? formatClock(new Date(record.checkIn)) : "-";
-                const checkOutTime = record.checkOut ? formatClock(new Date(record.checkOut)) : "-";
-                const workTime = record.checkIn && record.checkOut ? formatDuration(record.totalJamKerjaDetik || 0) : "-";
-                const status = record.checkIn ? "Hadir" : "Alpha";
-                const statusColor = status === "Hadir" ? "#2E9678" : "#D9534F";
-                const bgColor = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
-                
-                return `
-                  <tr style="background: ${bgColor};">
-                    <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center;">${index + 1}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px;">${formatDate(date)}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px;">${dayName}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px;">${record.nama || "-"}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px;">${checkInTime}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px;">${checkOutTime}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px;">${workTime}</td>
-                    <td style="border: 1px solid #dee2e6; padding: 6px; color: ${statusColor}; font-weight: bold; text-align: center;">${status}</td>
-                  </tr>
-                `;
-              }).join("")}
+              ${tableRows}
             </tbody>
           </table>
         </div>
@@ -148,7 +156,8 @@
       </div>
     `;
 
-    console.log("Report HTML generated");
+    console.log("Report HTML generated, length:", reportHTML.length);
+    console.log("Report HTML preview:", reportHTML.substring(0, 500));
 
     // PDF configuration
     const opt = {
@@ -164,12 +173,14 @@
     // Generate and download PDF
     const element = document.createElement('div');
     element.innerHTML = reportHTML;
-    element.style.position = 'absolute';
+    element.style.position = 'fixed';
     element.style.left = '-9999px';
+    element.style.top = '0';
     element.style.width = '210mm'; // A4 width
+    element.style.background = 'white';
     document.body.appendChild(element);
 
-    console.log("Element added to DOM");
+    console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
 
     html2pdf().set(opt).from(element).save().then(() => {
       console.log("PDF saved successfully");
