@@ -128,7 +128,13 @@
     document.querySelectorAll(".cal-cell").forEach((cellEl) => {
       const dateStr = cellEl.getAttribute("data-date");
 
-      // Klik tombol "+ jadwal" (admin only, muncul saat hover)
+      // Tap di area kosong sel tanggal -> buka Agenda Harian.
+      // Ini yang utama dipakai di HP/Android (hover tidak berlaku
+      // di layar sentuh, jadi tombol "+ jadwal" desktop tidak
+      // banyak berguna di mobile).
+      cellEl.addEventListener("click", () => openDayModal(dateStr));
+
+      // Klik tombol "+ jadwal" (admin only, muncul saat hover — desktop)
       const addBtn = cellEl.querySelector("[data-add-date]");
       if (addBtn) {
         addBtn.addEventListener("click", (e) => {
@@ -137,11 +143,13 @@
         });
       }
 
-      // Klik kartu jadwal
+      // Klik kartu jadwal (stopPropagation supaya tidak ikut memicu
+      // buka Agenda Harian di belakangnya)
       cellEl.querySelectorAll(".cal-event").forEach((chip) => {
-        chip.addEventListener("click", () => {
+        chip.addEventListener("click", (e) => {
+          e.stopPropagation();
           const id = chip.getAttribute("data-event-id");
-          const ev = allEvents.find((e) => e.id === id);
+          const ev = allEvents.find((e2) => e2.id === id);
           if (!ev) return;
           isAdmin ? openEditModal(ev) : openViewModal(ev);
         });
@@ -192,6 +200,53 @@
   function formatShortDate(dateStr) {
     const [y, m, d] = dateStr.split("-").map(Number);
     return `${d} ${MONTH_NAMES[m - 1]} ${y}`;
+  }
+
+  /* ================= MODAL AGENDA HARIAN (tap tanggal) ================= */
+
+  let dayModalDate = null;
+
+  function openDayModal(dateStr) {
+    dayModalDate = dateStr;
+    const eventsForDay = allEvents
+      .filter((ev) => ev.tanggal === dateStr)
+      .sort((a, b) => (a.judul || "").localeCompare(b.judul || ""));
+
+    document.getElementById("dayModalTitle").textContent = formatShortDate(dateStr);
+    document.getElementById("dayModalSub").textContent = eventsForDay.length
+      ? `${eventsForDay.length} kegiatan pada tanggal ini`
+      : "Belum ada kegiatan pada tanggal ini";
+
+    const list = document.getElementById("dayModalList");
+    if (!eventsForDay.length) {
+      list.innerHTML = `<div class="day-modal__empty">Belum ada jadwal.</div>`;
+    } else {
+      list.innerHTML = eventsForDay.map((ev) => `
+        <div class="day-modal__item" data-event-id="${ev.id}">
+          <span class="day-modal__item-title">${escapeHtml(ev.judul)}</span>
+          <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="flex-shrink:0; color: var(--color-text-faint);"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+      `).join("");
+
+      list.querySelectorAll("[data-event-id]").forEach((item) => {
+        item.addEventListener("click", () => {
+          const ev = allEvents.find((e) => e.id === item.getAttribute("data-event-id"));
+          if (!ev) return;
+          closeDayModal();
+          isAdmin ? openEditModal(ev) : openViewModal(ev);
+        });
+      });
+    }
+
+    const addBtn = document.getElementById("btnAddFromDayModal");
+    addBtn.style.display = isAdmin ? "inline-flex" : "none";
+
+    document.getElementById("dayModal").classList.add("is-open");
+  }
+
+  function closeDayModal() {
+    dayModalDate = null;
+    document.getElementById("dayModal").classList.remove("is-open");
   }
 
   /* ================= MODAL TAMBAH / EDIT (admin) ================= */
@@ -367,6 +422,17 @@
     document.getElementById("btnCloseView").addEventListener("click", closeViewModal);
     document.getElementById("viewEventModal").addEventListener("click", (e) => {
       if (e.target.id === "viewEventModal") closeViewModal();
+    });
+
+    // Modal Agenda Harian (tap tanggal — utamanya dipakai di HP)
+    document.getElementById("btnCloseDayModal").addEventListener("click", closeDayModal);
+    document.getElementById("dayModal").addEventListener("click", (e) => {
+      if (e.target.id === "dayModal") closeDayModal();
+    });
+    document.getElementById("btnAddFromDayModal").addEventListener("click", () => {
+      const dateForAdd = dayModalDate;
+      closeDayModal();
+      openAddModal(dateForAdd);
     });
   });
 })();
