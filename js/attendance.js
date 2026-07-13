@@ -204,17 +204,24 @@
     
     try {
       const now = new Date();
-      const recordId = getTodayRecordId();
       
-      // Baca data check-in dulu
-      console.log("Reading check-in data from Firebase...");
-      const doc = await db.collection("attendance").doc(recordId).get();
-      if (!doc.exists) {
+      // Cari record check-in terakhir yang belum di-check-out (bisa dari hari sebelumnya)
+      console.log("Searching for most recent unchecked-in record...");
+      const snapshot = await db.collection("attendance")
+        .where("nama", "==", CURRENT_EMPLOYEE.nama)
+        .where("checkOut", "==", null)
+        .orderBy("checkIn", "desc")
+        .limit(1)
+        .get();
+      
+      if (snapshot.empty) {
         window.showToast("Data check-in tidak ditemukan.", "error");
         window.setButtonLoading(btn, false);
         return;
       }
       
+      const doc = snapshot.docs[0];
+      const recordId = doc.id;
       const data = doc.data();
       const checkInDate = new Date(data.checkIn);
       const totalDetik = Math.floor((now - checkInDate) / 1000);
@@ -251,6 +258,48 @@
     }
   }
   
+  /** Cari record check-in aktif (hari ini atau hari sebelumnya) */
+  async function loadActiveAttendance() {
+    try {
+      // Cek record hari ini dulu
+      const todayRecordId = getTodayRecordId();
+      const todayDoc = await db.collection("attendance").doc(todayRecordId).get();
+      
+      if (todayDoc.exists) {
+        const data = todayDoc.data();
+        if (data.checkIn && !data.checkOut) {
+          // Ada check-in aktif hari ini
+          updateUI(data);
+          return;
+        }
+        if (data.checkIn && data.checkOut) {
+          // Sudah check-out hari ini
+          updateUI(data);
+          return;
+        }
+      }
+      
+      // Kalau tidak ada record hari ini atau sudah check-out, cari record check-in aktif dari hari sebelumnya
+      const snapshot = await db.collection("attendance")
+        .where("nama", "==", CURRENT_EMPLOYEE.nama)
+        .where("checkOut", "==", null)
+        .orderBy("checkIn", "desc")
+        .limit(1)
+        .get();
+      
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data();
+        updateUI(data);
+      } else {
+        // Tidak ada check-in aktif sama sekali
+        updateUI(null);
+      }
+    } catch (error) {
+      console.error("Gagal memuat data attendance:", error);
+      window.showToast("Gagal memuat data attendance.", "error");
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const btnCheckIn = document.getElementById("btnCheckIn");
     const btnCheckOut = document.getElementById("btnCheckOut");
@@ -266,11 +315,26 @@
     btnCheckIn.addEventListener("click", handleCheckIn);
     btnCheckOut.addEventListener("click", handleCheckOut);
     
+    // Load data attendance aktif (bisa dari hari sebelumnya)
+    loadActiveAttendance();
+    
     // Real-time listener untuk data hari ini
     const recordId = getTodayRecordId();
     db.collection("attendance").doc(recordId).onSnapshot(
       (snapshot) => {
-        updateUI(snapshot.exists ? snapshot.data() : null);
+        if (snapshot.exists) {
+          const data = snapshot.data();
+          if (data.checkIn && !data.checkOut) {
+            // Check-in aktif hari ini
+            updateUI(data);
+          } else if (data.checkIn && data.checkOut) {
+            // Sudah check-out hari ini, cek apakah ada check-in aktif dari hari lain
+            loadActiveAttendance();
+          }
+        } else {
+          // Tidak ada record hari ini, cek apakah ada check-in aktif dari hari lain
+          loadActiveAttendance();
+        }
       },
       (error) => {
         console.error("Gagal memuat data attendance:", error);
