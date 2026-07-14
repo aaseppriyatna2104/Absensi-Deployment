@@ -8,7 +8,25 @@
    ========================================================= */
 
 (function () {
-  const FIELD_LABELS = { nama: "Nama", email: "Email", telepon: "Telepon", alamat: "Alamat" };
+  const FIELD_LABELS = { 
+    nama: "Nama", 
+    email: "Email", 
+    telepon: "Telepon", 
+    alamat: "Alamat",
+    kontakDaruratTipe: "Hubungan Kontak Darurat",
+    kontakDaruratNomor: "Nomor Kontak Darurat"
+  };
+  const TIPE_LABELS = {
+    pasangan: "Pasangan",
+    istri: "Istri",
+    suami: "Suami",
+    ayah: "Ayah",
+    ibu: "Ibu",
+    orang_tua: "Orang Tua",
+    saudara: "Saudara",
+    teman: "Teman",
+    lainnya: "Lainnya"
+  };
   const MONTH_NAMES = [
     "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
     "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
@@ -41,8 +59,15 @@
       .filter((key) => (oldData[key] || "") !== (newData[key] || ""))
       .map((key) => {
         const label = FIELD_LABELS[key];
-        const before = oldData[key] ? oldData[key] : "(belum ada)";
-        const after = newData[key] || "-";
+        let before = oldData[key] ? oldData[key] : "(belum ada)";
+        let after = newData[key] || "-";
+        
+        // Convert tipe to readable label
+        if (key === "kontakDaruratTipe") {
+          before = TIPE_LABELS[before] || before;
+          after = TIPE_LABELS[after] || after;
+        }
+        
         return `<div style="margin-bottom:4px;"><strong>${label}:</strong> <span style="color: var(--color-text-faint); text-decoration: line-through;">${before}</span> → <span style="color: var(--color-teal-600, var(--color-teal-500));">${after}</span></div>`;
       });
     if (!rows.length) return '<span style="color: var(--color-text-faint);">Tidak ada perubahan field.</span>';

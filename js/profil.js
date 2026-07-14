@@ -41,11 +41,28 @@
           disableProfileForm(false);
         }
 
+        // Update kontak darurat
+        const tipeLabels = {
+          pasangan: "Pasangan",
+          istri: "Istri",
+          suami: "Suami",
+          ayah: "Ayah",
+          ibu: "Ibu",
+          orang_tua: "Orang Tua",
+          saudara: "Saudara",
+          teman: "Teman",
+          lainnya: "Lainnya"
+        };
+        document.getElementById("infoKontakDaruratTipe").textContent = tipeLabels[currentProfile.kontakDaruratTipe] || "-";
+        document.getElementById("infoKontakDaruratNomor").textContent = currentProfile.kontakDaruratNomor || "-";
+
         // Isi form dengan data profil
         document.getElementById("inputNama").value = currentProfile.nama || "";
         document.getElementById("inputEmail").value = currentProfile.email || "";
         document.getElementById("inputTelepon").value = currentProfile.telepon || "";
         document.getElementById("inputAlamat").value = currentProfile.alamat || "";
+        document.getElementById("inputKontakDaruratTipe").value = currentProfile.kontakDaruratTipe || "";
+        document.getElementById("inputKontakDaruratNomor").value = currentProfile.kontakDaruratNomor || "";
 
         // Cek status pengajuan profil
         await checkProfileRequestStatus(session.username);
@@ -142,6 +159,8 @@
         email: document.getElementById("inputEmail").value.trim(),
         telepon: document.getElementById("inputTelepon").value.trim(),
         alamat: document.getElementById("inputAlamat").value.trim(),
+        kontakDaruratTipe: document.getElementById("inputKontakDaruratTipe").value,
+        kontakDaruratNomor: document.getElementById("inputKontakDaruratNomor").value.trim(),
       };
 
       // Cek apakah ada perubahan
@@ -150,6 +169,8 @@
         email: currentProfile.email || "",
         telepon: currentProfile.telepon || "",
         alamat: currentProfile.alamat || "",
+        kontakDaruratTipe: currentProfile.kontakDaruratTipe || "",
+        kontakDaruratNomor: currentProfile.kontakDaruratNomor || "",
       };
 
       const hasChanges = Object.keys(newData).some(key => newData[key] !== oldData[key]);
