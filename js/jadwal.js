@@ -372,9 +372,12 @@
     // Real-time listener — semua perubahan (tambah/edit/hapus/drag)
     // langsung ter-refresh di sini, termasuk kalau ada 2 admin yang
     // buka halaman ini bersamaan.
+    console.log("Loading schedule data, isAdmin:", isAdmin, "session:", session);
     db.collection("schedule").onSnapshot(
       (snapshot) => {
+        console.log("Schedule snapshot received, docs:", snapshot.docs.length);
         allEvents = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        console.log("allEvents:", allEvents);
         document.getElementById("jadwalSubLabel").textContent = `${allEvents.length} jadwal tersimpan`;
         renderCalendar();
       },
