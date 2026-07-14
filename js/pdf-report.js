@@ -216,25 +216,27 @@
     console.log("Starting PDF generation");
 
     // Generate and download PDF.
-    // PENTING: elemen HARUS tetap terlihat (visibility/opacity normal)
-    // supaya html2canvas bisa menggambar isinya dengan benar — kalau
-    // opacity di-set 0, hasil capture-nya jadi halaman kosong/blank.
-    // Solusinya: taruh elemen di luar area layar (bukan disembunyikan).
+    // PENTING: elemen HARUS terlihat oleh html2canvas untuk bisa di-capture.
+    // Kita gunakan opacity 0.01 (bukan 0) agar tetap bisa di-capture tapi tidak terlihat.
+    // Position fixed di tengah layar untuk memastikan browser merendernya.
     const element = document.createElement('div');
     element.innerHTML = reportHTML;
     element.style.position = 'fixed';
-    element.style.left = '-10000px'; // di luar viewport, bukan opacity 0
-    element.style.top = '0';
-    element.style.zIndex = '-1';
+    element.style.left = '50%';
+    element.style.top = '50%';
+    element.style.transform = 'translate(-50%, -50%)';
+    element.style.zIndex = '9999';
     element.style.width = '210mm'; // A4 width
     element.style.background = '#ffffff';
     element.style.padding = '20px';
+    element.style.opacity = '0.01'; // Hampir tidak terlihat tapi bisa di-capture
+    element.style.pointerEvents = 'none'; // Tidak bisa diklik
     document.body.appendChild(element);
 
     console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
     console.log("Element content preview:", element.innerHTML.substring(0, 200));
 
-    // Longer delay to ensure element is fully rendered/laid out before capture
+    // Delay untuk memastikan elemen sepenuhnya dirender sebelum capture
     setTimeout(() => {
       console.log("Starting html2pdf generation");
       html2pdf().set(opt).from(element).save().then(() => {
@@ -247,7 +249,7 @@
         document.body.removeChild(element);
         window.showToast("Gagal membuat laporan PDF: " + err.message, "error");
       });
-    }, 500);
+    }, 800);
   }
 
   // Export function to global scope
