@@ -208,7 +208,7 @@
       margin: 10,
       filename: `Laporan_Kehadiran_${new Date().toISOString().split('T')[0]}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: true },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: true, windowWidth: 794, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
@@ -221,16 +221,13 @@
     // Position fixed di tengah layar untuk memastikan browser merendernya.
     const element = document.createElement('div');
     element.innerHTML = reportHTML;
-    element.style.position = 'fixed';
-    element.style.left = '50%';
-    element.style.top = '50%';
-    element.style.transform = 'translate(-50%, -50%)';
-    element.style.zIndex = '9999';
-    element.style.width = '210mm'; // A4 width
+    element.style.position = 'absolute';
+    element.style.left = '0';
+    element.style.top = '-99999px'; // Ditaruh di luar viewport, bukan pakai opacity/transform
+    element.style.zIndex = '-1';
+    element.style.width = '794px'; // A4 width dalam px (210mm @ 96dpi), html2canvas lebih akurat pakai px
     element.style.background = '#ffffff';
     element.style.padding = '20px';
-    element.style.opacity = '0.01'; // Hampir tidak terlihat tapi bisa di-capture
-    element.style.pointerEvents = 'none'; // Tidak bisa diklik
     document.body.appendChild(element);
 
     console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
