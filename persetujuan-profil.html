@@ -17,13 +17,17 @@
 </script>
 
 <script>
-  // Guard login: kalau belum ada sesi, langsung lempar ke halaman
-  // login SEBELUM konten halaman ini sempat dirender/terlihat.
+  // Guard login + guard admin: kalau belum ada sesi ATAU bukan admin,
+  // langsung lempar sebelum konten sempat terlihat.
   (function () {
     try {
       var session = JSON.parse(localStorage.getItem("session_user"));
       if (!session || !session.username) {
         window.location.replace("login.html");
+        return;
+      }
+      if (session.role !== "admin") {
+        window.location.replace("absensi.html");
       }
     } catch (e) {
       window.location.replace("login.html");
@@ -31,7 +35,7 @@
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Profil — Absensi Karyawan</title>
+<title>Persetujuan Profil — Absensi Karyawan</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
@@ -41,6 +45,76 @@
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+<style>
+  /* Gaya khusus halaman Kelola Data — modal edit + tombol aksi tabel */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--sp-5);
+  }
+  .modal-backdrop.is-open { display: flex; }
+  .modal-card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--color-surface);
+    border-radius: var(--radius-lg);
+    padding: var(--sp-6);
+    box-shadow: var(--shadow-md);
+  }
+  .modal-card h3 {
+    margin-bottom: var(--sp-1);
+  }
+  .modal-card__sub {
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+    margin-bottom: var(--sp-5);
+  }
+  .modal-card .form-field {
+    margin-bottom: var(--sp-4);
+  }
+  .modal-card__actions {
+    display: flex;
+    gap: var(--sp-3);
+    margin-top: var(--sp-2);
+  }
+  .modal-card__actions .btn { flex: 1; }
+  .row-actions {
+    display: flex;
+    gap: var(--sp-2);
+    justify-content: flex-end;
+  }
+  .row-actions button {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+  }
+  .row-actions button:hover { background: var(--color-surface-alt); }
+  .row-actions button.danger:hover {
+    background: #FDECEC;
+    color: #D9534F;
+    border-color: #D9534F;
+  }
+  .search-row {
+    display: flex;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    flex-wrap: wrap;
+  }
+  .search-row input {
+    flex: 1;
+    min-width: 180px;
+  }
+</style>
 </head>
 <body>
 
@@ -84,11 +158,11 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="17" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Kelola Data</span>
       </a>
-      <a href="persetujuan-profil.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="persetujuan-profil.html" class="nav-menu__item is-active" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Persetujuan Profil</span>
       </a>
-      <a href="profil.html" class="nav-menu__item is-active">
+      <a href="profil.html" class="nav-menu__item">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Profil</span>
       </a>
@@ -124,8 +198,8 @@
 
     <header class="topbar">
       <div class="topbar__title-group">
-        <h1>Profil</h1>
-        <div class="topbar__breadcrumb">Kelola data diri Anda</div>
+        <h1>Persetujuan Profil</h1>
+        <div class="topbar__breadcrumb">Tinjau perubahan data diri staff (khusus admin)</div>
       </div>
       <div class="topbar__right">
         <div class="punch-clock">
@@ -137,114 +211,96 @@
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <button class="topbar__icon-btn" aria-label="Notifikasi">
-          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </button>
       </div>
     </header>
 
     <main class="content">
 
-      <div class="dashboard-grid">
-        
-        <!-- Kartu Profil -->
-        <div class="panel">
-          <div class="panel__header">
-            <div>
-              <h2>Identitas Karyawan</h2>
-              <div class="panel__header-sub">Informasi akun Anda</div>
-            </div>
-          </div>
-
-          <div style="display: flex; align-items: center; gap: var(--sp-5); margin-bottom: var(--sp-6);">
-            <div id="profileAvatar" style="width: 80px; height: 80px; background: var(--color-teal-500); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-weight: 700; font-size: var(--fs-xl); color: var(--color-navy-900);">--</div>
-            <div>
-              <div id="profileName" style="font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg); margin-bottom: var(--sp-1);">...</div>
-              <div id="profileRole" style="font-size: var(--fs-sm); color: var(--color-text-muted);">...</div>
-              <div id="profileUsername" style="font-size: var(--fs-xs); color: var(--color-text-faint); margin-top: var(--sp-1);">...</div>
-            </div>
-          </div>
-
-          <div style="padding: var(--sp-4); background: var(--color-surface-alt); border-radius: var(--radius-md);">
-            <div style="display: flex; justify-content: space-between; margin-bottom: var(--sp-3);">
-              <span style="font-size: var(--fs-sm); color: var(--color-text-muted);">Username</span>
-              <span id="infoUsername" class="mono" style="font-size: var(--fs-sm);">...</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: var(--sp-3);">
-              <span style="font-size: var(--fs-sm); color: var(--color-text-muted);">Role</span>
-              <span id="infoRole" style="font-size: var(--fs-sm); font-weight: 500;">...</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-              <span style="font-size: var(--fs-sm); color: var(--color-text-muted);">Status Akun</span>
-              <span class="status-badge status-badge--hadir">Aktif</span>
-            </div>
+      <section class="panel">
+        <div class="panel__header">
+          <div>
+            <h2>Pengajuan Perubahan Data Diri</h2>
+            <div class="panel__header-sub" id="approvalCountLabel">Memuat data...</div>
           </div>
         </div>
 
-        <!-- Form Data Diri -->
-        <div class="panel">
-          <div class="panel__header">
-            <div>
-              <h2>Data Diri</h2>
-              <div class="panel__header-sub">Perbarui informasi pribadi</div>
-            </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Perubahan Diajukan</th>
+                <th>Diajukan Pada</th>
+                <th style="text-align:right;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="approvalTableBody">
+              <tr>
+                <td colspan="4" style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
+                  Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top: var(--sp-6);">
+        <div class="panel__header">
+          <div>
+            <h2>Riwayat Persetujuan</h2>
+            <div class="panel__header-sub">Pengajuan yang sudah disetujui atau ditolak</div>
           </div>
-
-          <div id="profilePendingBanner" style="display:none; align-items:center; gap: var(--sp-3); padding: var(--sp-4); background: #FFF7E6; border: 1px solid #F0B429; border-radius: var(--radius-md); margin-bottom: var(--sp-4);">
-            <svg viewBox="0 0 24 24" fill="none" width="18" height="18" style="flex-shrink:0; color:#B45309;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div style="font-size: var(--fs-sm); color:#7C4A03;">
-              <strong>Menunggu persetujuan admin.</strong> Perubahan di bawah ini belum berlaku sampai disetujui.
-            </div>
-          </div>
-
-          <div id="profileRejectedBanner" style="display:none; align-items:center; gap: var(--sp-3); padding: var(--sp-4); background: #FDECEC; border: 1px solid #D9534F; border-radius: var(--radius-md); margin-bottom: var(--sp-4);">
-            <svg viewBox="0 0 24 24" fill="none" width="18" height="18" style="flex-shrink:0; color:#D9534F;"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M15 9l-6 6M9 9l6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            <div style="font-size: var(--fs-sm); color:#7A1F1C;">
-              <strong>Pengajuan terakhir ditolak admin<span id="profileRejectedReason"></span>.</strong> Silakan ajukan perubahan lagi.
-            </div>
-          </div>
-
-          <form id="profileForm" novalidate>
-            <div class="form-field" data-field="nama">
-              <label for="inputNama">Nama Lengkap</label>
-              <input type="text" id="inputNama" name="nama" placeholder="Masukkan nama lengkap" required>
-              <span class="form-field__error">Nama lengkap wajib diisi.</span>
-            </div>
-
-            <div class="form-field" data-field="email">
-              <label for="inputEmail">Email</label>
-              <input type="email" id="inputEmail" name="email" placeholder="contoh@email.com" required>
-              <span class="form-field__error">Email tidak valid.</span>
-            </div>
-
-            <div class="form-field" data-field="telepon">
-              <label for="inputTelepon">Nomor Telepon</label>
-              <input type="tel" id="inputTelepon" name="telepon" placeholder="08xxxxxxxxxx" required>
-              <span class="form-field__error">Nomor telepon wajib diisi.</span>
-            </div>
-
-            <div class="form-field" data-field="alamat">
-              <label for="inputAlamat">Alamat</label>
-              <input type="text" id="inputAlamat" name="alamat" placeholder="Masukkan alamat lengkap" required>
-              <span class="form-field__error">Alamat wajib diisi.</span>
-            </div>
-
-            <button type="submit" class="btn btn--primary" id="btnSaveProfile" style="width: 100%; margin-top: var(--sp-4);">
-              <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 21v-8H7v8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 3v5h8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              Simpan Perubahan
-            </button>
-          </form>
         </div>
 
-      </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Staff</th>
+                <th>Perubahan</th>
+                <th>Status</th>
+                <th>Ditinjau Pada</th>
+              </tr>
+            </thead>
+            <tbody id="approvalHistoryBody">
+              <tr>
+                <td colspan="4" style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
+                  Memuat data...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
     </main>
+  </div>
+</div>
+
+<!-- ============ MODAL TOLAK ============ -->
+<div class="modal-backdrop" id="rejectModal">
+  <div class="modal-card">
+    <h3>Tolak Pengajuan</h3>
+    <div class="modal-card__sub" id="rejectModalSub">...</div>
+
+    <form id="rejectForm" novalidate>
+      <div class="form-field">
+        <label for="rejectReason">Alasan penolakan (opsional)</label>
+        <input type="text" id="rejectReason" placeholder="mis. Nomor telepon tidak valid">
+      </div>
+
+      <div class="modal-card__actions">
+        <button type="button" class="btn btn--secondary" id="btnCancelReject">Batal</button>
+        <button type="submit" class="btn btn--primary" id="btnConfirmReject">Tolak Pengajuan</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script src="js/firebase-config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/core.js"></script>
-<script src="js/validation.js"></script>
+<script src="js/persetujuan-profil.js"></script>
 </body>
 </html>
