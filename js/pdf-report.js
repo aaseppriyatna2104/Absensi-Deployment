@@ -54,8 +54,9 @@
 
     // Sort records by date (newest first)
     const sortedRecords = [...records].sort((a, b) => {
-      const dateA = new Date(a.tanggal);
-      const dateB = new Date(b.tanggal);
+      // Handle both string "YYYY-MM-DD" and ISO datetime formats
+      const dateA = a.tanggal.includes('T') ? new Date(a.tanggal) : new Date(a.tanggal + 'T00:00:00');
+      const dateB = b.tanggal.includes('T') ? new Date(b.tanggal) : new Date(b.tanggal + 'T00:00:00');
       return dateB - dateA;
     });
 
@@ -74,7 +75,21 @@
     let tableRows = '';
     sortedRecords.forEach((record, index) => {
       console.log("Processing record", index, ":", record);
-      const date = new Date(record.tanggal);
+      
+      // Handle date format - support both "YYYY-MM-DD" and ISO datetime
+      let date;
+      if (record.tanggal.includes('T')) {
+        date = new Date(record.tanggal);
+      } else {
+        date = new Date(record.tanggal + 'T00:00:00');
+      }
+      
+      // Validate date
+      if (isNaN(date.getTime())) {
+        console.error("Invalid date for record:", record);
+        date = new Date(); // Fallback to current date
+      }
+      
       const dayName = DAY_NAMES[date.getDay()];
       const checkInTime = record.checkIn ? formatClock(new Date(record.checkIn)) : "-";
       const checkOutTime = record.checkOut ? formatClock(new Date(record.checkOut)) : "-";
@@ -213,22 +228,26 @@
     element.style.zIndex = '-1';
     element.style.width = '210mm'; // A4 width
     element.style.background = '#ffffff';
+    element.style.padding = '20px';
     document.body.appendChild(element);
 
     console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
+    console.log("Element content preview:", element.innerHTML.substring(0, 200));
 
-    // Small delay to ensure element is rendered/laid out before capture
+    // Longer delay to ensure element is fully rendered/laid out before capture
     setTimeout(() => {
+      console.log("Starting html2pdf generation");
       html2pdf().set(opt).from(element).save().then(() => {
         console.log("PDF saved successfully");
         document.body.removeChild(element);
         window.showToast("Laporan PDF berhasil diunduh!", "success");
       }).catch(err => {
         console.error("PDF generation error:", err);
+        console.error("Error details:", JSON.stringify(err));
         document.body.removeChild(element);
         window.showToast("Gagal membuat laporan PDF: " + err.message, "error");
       });
-    }, 150);
+    }, 500);
   }
 
   // Export function to global scope
