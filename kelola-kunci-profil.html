@@ -17,13 +17,17 @@
 </script>
 
 <script>
-  // Guard login: kalau belum ada sesi, langsung lempar ke halaman
-  // login SEBELUM konten halaman ini sempat dirender/terlihat.
+  // Guard login + guard admin: kalau belum ada sesi ATAU bukan admin,
+  // langsung lempar sebelum konten sempat terlihat.
   (function () {
     try {
       var session = JSON.parse(localStorage.getItem("session_user"));
       if (!session || !session.username) {
         window.location.replace("login.html");
+        return;
+      }
+      if (session.role !== "admin") {
+        window.location.replace("absensi.html");
       }
     } catch (e) {
       window.location.replace("login.html");
@@ -31,17 +35,71 @@
   })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Riwayat — Absensi Karyawan</title>
+<title>Kelola Kunci Profil — Recharge Deployment</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="css/style.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+
+<style>
+  .row-actions {
+    display: flex;
+    gap: var(--sp-2);
+    justify-content: flex-end;
+  }
+  .row-actions button {
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: var(--fs-xs);
+    color: var(--color-text-muted);
+  }
+  .row-actions button:hover { background: var(--color-surface-alt); }
+  .row-actions button.danger:hover {
+    background: #FDECEC;
+    color: #D9534F;
+    border-color: #D9534F;
+  }
+  .row-actions button.success:hover {
+    background: #E3F3EE;
+    color: #1F7A64;
+    border-color: #1F7A64;
+  }
+  .search-row {
+    display: flex;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-4);
+    flex-wrap: wrap;
+  }
+  .search-row input {
+    flex: 1;
+    min-width: 180px;
+  }
+  .lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
+    font-weight: 500;
+  }
+  .lock-badge.locked {
+    background: #FDECEC;
+    color: #D9534F;
+  }
+  .lock-badge.unlocked {
+    background: #E3F3EE;
+    color: #1F7A64;
+  }
+</style>
 </head>
 <body>
 
@@ -77,7 +135,7 @@
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 3v4M8 3v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Jadwal</span>
       </a>
-      <a href="riwayat.html" class="nav-menu__item is-active" data-menu-role="admin">
+      <a href="riwayat.html" class="nav-menu__item" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Riwayat</span>
       </a>
@@ -89,7 +147,7 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Persetujuan Profil</span>
       </a>
-      <a href="kelola-kunci-profil.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="kelola-kunci-profil.html" class="nav-menu__item is-active" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Kelola Kunci Profil</span>
       </a>
@@ -129,8 +187,8 @@
 
     <header class="topbar">
       <div class="topbar__title-group">
-        <h1>Riwayat</h1>
-        <div class="topbar__breadcrumb">Rekap presensi periode sebelumnya</div>
+        <h1>Kelola Kunci Profil</h1>
+        <div class="topbar__breadcrumb">Kunci/buka akses edit profil staff (khusus admin)</div>
       </div>
       <div class="topbar__right">
         <div class="punch-clock">
@@ -142,91 +200,37 @@
           <svg class="icon-moon" viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           <svg class="icon-sun" viewBox="0 0 24 24" fill="none" width="18" height="18"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </button>
-        <button class="topbar__icon-btn" aria-label="Notifikasi">
-          <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M18 8a6 6 0 10-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 01-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        </button>
       </div>
     </header>
 
-    <main class="content" id="riwayat-content">
-
-      <!-- Ringkasan otomatis -->
-      <section class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-card__top">
-            <div class="stat-card__icon stat-card__icon--teal">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-          </div>
-          <div class="stat-card__value mono" id="statTotalHadir">0</div>
-          <div class="stat-card__label">Total Hadir</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card__top">
-            <div class="stat-card__icon stat-card__icon--amber">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-          </div>
-          <div class="stat-card__value mono" id="statTotalTelat">0</div>
-          <div class="stat-card__label">Total Alpha</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card__top">
-            <div class="stat-card__icon stat-card__icon--blue">
-              <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-          </div>
-          <div class="stat-card__value mono" id="statTotalJamKerja">00:00:00</div>
-          <div class="stat-card__label">Total Jam Kerja</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-card__top">
-            <div class="stat-card__icon stat-card__icon--teal">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M4 19V5m6 14V9m6 10V13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-          </div>
-          <div class="stat-card__value mono" id="statPersentase">0%</div>
-          <div class="stat-card__label">Persentase Kehadiran</div>
-        </div>
-      </section>
+    <main class="content">
 
       <section class="panel">
         <div class="panel__header">
           <div>
-            <h2>Rekap Presensi</h2>
-            <div class="panel__header-sub" id="riwayatPeriodeLabel">Menampilkan data hari ini</div>
+            <h2>Status Kunci Profil Staff</h2>
+            <div class="panel__header-sub" id="lockCountLabel">Memuat data...</div>
           </div>
-          <button class="btn btn--secondary" data-download-pdf data-pdf-target="riwayat-content" data-menu-role="admin">
-            <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Download PDF
-          </button>
         </div>
 
-        <div class="tab-row" id="filterTabs">
-          <span class="tab-item is-active" data-filter="harian">Harian</span>
-          <span class="tab-item" data-filter="mingguan">Mingguan</span>
-          <span class="tab-item" data-filter="bulanan">Bulanan</span>
+        <div class="search-row">
+          <input type="text" id="searchInput" placeholder="Cari nama karyawan...">
         </div>
 
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Tanggal</th>
-                <th>Hari</th>
                 <th>Nama</th>
-                <th>Jam Check In</th>
-                <th>Jam Check Out</th>
-                <th>Total Jam Kerja</th>
-                <th>Status</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Status Kunci</th>
+                <th style="text-align:right;">Aksi</th>
               </tr>
             </thead>
-            <tbody id="riwayatTableBody">
+            <tbody id="lockTableBody">
               <tr>
-                <td colspan="6" style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
+                <td colspan="5" style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
                   Memuat data...
                 </td>
               </tr>
@@ -242,7 +246,6 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/core.js"></script>
-<script src="js/pdf-report.js"></script>
-<script src="js/riwayat.js"></script>
+<script src="js/kelola-kunci-profil.js"></script>
 </body>
 </html>
