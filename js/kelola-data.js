@@ -534,6 +534,107 @@
     }
   }
 
+  /**
+   * Mengisi dropdown karyawan di form Input Manual Presensi.
+   * Sumber data sama seperti dropdown kalender: window.Auth.USERS.
+   */
+  function loadManualStaffList() {
+    const select = document.getElementById("manualKaryawan");
+    if (!select) return;
+    select.innerHTML = '<option value="">Pilih karyawan...</option>';
+
+    ((window.Auth && window.Auth.USERS) || [])
+      .filter((u) => u.role === "staff")
+      .forEach((user) => {
+        const option = document.createElement("option");
+        option.value = user.username;
+        option.textContent = user.nama;
+        select.appendChild(option);
+      });
+  }
+
+  /**
+   * Menyesuaikan tampilan form input manual sesuai status yang
+   * dipilih: kalau "Alpha", input jam & checkbox "tanpa jam"
+   * disembunyikan karena tidak relevan (Alpha = tidak hadir).
+   */
+  function updateManualFormVisibility() {
+    const status = document.getElementById("manualStatus").value;
+    const tanpaJam = document.getElementById("manualTanpaJam").checked;
+    const isHadir = status === "hadir";
+
+    document.getElementById("manualJamTersediaWrapper").style.display = isHadir ? "" : "none";
+    document.getElementById("manualCheckInWrapper").style.display = (isHadir && !tanpaJam) ? "" : "none";
+    document.getElementById("manualCheckOutWrapper").style.display = (isHadir && !tanpaJam) ? "" : "none";
+  }
+
+  /**
+   * Simpan entri presensi manual (backfill) ke Firestore.
+   * Doc ID mengikuti format yang sama dengan absen normal
+   * (`${username}_${tanggal}`) supaya kalau ternyata sudah ada
+   * record di tanggal itu, otomatis ter-merge/timpa, bukan dobel.
+   *
+   * Entri manual ditandai `inputManual: true` dan `diinputOleh`
+   * supaya tetap bisa dibedakan dari absen normal (transparansi/audit).
+   */
+  async function handleSaveManualInput(e) {
+    e.preventDefault();
+
+    const username = document.getElementById("manualKaryawan").value;
+    const namaKaryawan = document.getElementById("manualKaryawan").selectedOptions[0]?.textContent;
+    const tanggal = document.getElementById("manualTanggal").value;
+    const status = document.getElementById("manualStatus").value;
+    const tanpaJam = document.getElementById("manualTanpaJam").checked;
+
+    if (!username || !tanggal) {
+      window.showToast("Pilih karyawan dan tanggal terlebih dahulu.", "error");
+      return;
+    }
+
+    const btn = document.getElementById("btnSimpanManual");
+    window.setButtonLoading(btn, true, "Menyimpan...");
+
+    try {
+      let checkIn = null;
+      let checkOut = null;
+      let totalJamKerjaDetik = 0;
+
+      if (status === "hadir" && !tanpaJam) {
+        const checkInStr = document.getElementById("manualCheckIn").value;
+        const checkOutStr = document.getElementById("manualCheckOut").value;
+        checkIn = combineDateTime(tanggal, checkInStr);
+        checkOut = combineDateTime(tanggal, checkOutStr);
+        if (checkIn && checkOut) {
+          totalJamKerjaDetik = Math.max(0, Math.floor((new Date(checkOut) - new Date(checkIn)) / 1000));
+        }
+      }
+
+      const recordId = `${username}_${tanggal}`;
+      const session = window.Auth.getSession();
+
+      await db.collection("attendance").doc(recordId).set({
+        nama: namaKaryawan,
+        tanggal,
+        checkIn,
+        checkOut,
+        totalJamKerjaDetik,
+        status,
+        inputManual: true,
+        diinputOleh: session ? session.username : "-",
+      }, { merge: true });
+
+      window.showToast("Data manual berhasil disimpan.", "success");
+      document.getElementById("formInputManual").reset();
+      updateManualFormVisibility();
+      await loadAllRecords();
+    } catch (err) {
+      console.error("Gagal menyimpan input manual:", err);
+      window.showToast("Gagal menyimpan data manual.", "error");
+    } finally {
+      window.setButtonLoading(btn, false);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const tableBody = document.getElementById("kelolaTableBody");
     if (!tableBody) return; // bukan halaman Kelola Data
@@ -548,6 +649,13 @@
 
     loadAllRecords();
     loadStaffList();
+    loadManualStaffList();
+
+    // ==================== INPUT MANUAL PRESENSI ====================
+    document.getElementById("formInputManual").addEventListener("submit", handleSaveManualInput);
+    document.getElementById("manualStatus").addEventListener("change", updateManualFormVisibility);
+    document.getElementById("manualTanpaJam").addEventListener("change", updateManualFormVisibility);
+    updateManualFormVisibility();
 
     // Klik tombol Edit/Hapus per baris (event delegation)
     tableBody.addEventListener("click", (e) => {
