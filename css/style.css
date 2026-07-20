@@ -392,6 +392,25 @@ table {
               color var(--dur-fast) var(--ease-standard);
 }
 
+/* Sembunyikan menu/tombol khusus admin buat akun staff SEBELUM
+   render pertama, lewat atribut data-role yang di-set inline di
+   <head> tiap halaman (anti-flash) — supaya staff ga sempat lihat
+   menu admin muncul sekilas lalu hilang tiap pindah halaman.
+   core.js tetap jalanin logika yang sama di JS sebagai fallback
+   untuk kasus data-role belum sempat ke-set. */
+html[data-role="staff"] [data-menu-role="admin"] {
+  display: none !important;
+}
+
+/* Sama seperti di atas, tapi kebalikannya: sembunyikan menu tertentu
+   dari sidebar admin (Riwayat, Persetujuan Profil, Kelola Kunci
+   Profil) karena admin sudah punya akses lewat tombol di Kelola
+   Data. Dipasang di CSS juga (bukan cuma core.js) biar gak "kedip"
+   muncul dulu baru hilang tiap pindah halaman. */
+html[data-role="admin"] [data-menu-hide="admin"] {
+  display: none !important;
+}
+
 .nav-menu__item svg {
   width: 18px;
   height: 18px;
@@ -923,6 +942,7 @@ table {
 .status-badge--telat { color: var(--color-amber-600); background: var(--color-amber-100); }
 .status-badge--izin  { color: var(--color-blue-600); background: var(--color-blue-100); }
 .status-badge--alpha { color: var(--color-red-600); background: var(--color-red-100); }
+.status-badge--pending { color: var(--color-blue-600); background: var(--color-blue-100); }
 
 /* ---------------------------------------------------------
    Tabel data
