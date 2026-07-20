@@ -207,12 +207,15 @@
         <div class="panel__header">
           <div>
             <h2>Statistik Kehadiran</h2>
-            <div class="panel__header-sub">Berdasarkan data presensi Anda pada bulan berjalan</div>
+            <div class="panel__header-sub" id="statsPanelSubtitle">Berdasarkan data presensi Anda pada bulan berjalan</div>
           </div>
-          <button class="btn btn--secondary" data-download-pdf data-pdf-target="dashboard-content" data-menu-role="admin">
-            <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Download PDF
-          </button>
+          <div style="display:flex; align-items:center; gap: var(--sp-3);">
+            <select id="dashMonthFilter" class="select-filter" style="min-width: 160px;"></select>
+            <button class="btn btn--secondary" data-download-pdf data-pdf-target="dashboard-content" data-menu-role="admin">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Download PDF
+            </button>
+          </div>
         </div>
 
         <div class="stat-grid" style="margin-bottom: var(--sp-6);">
@@ -281,8 +284,8 @@
           <div class="panel" style="margin-bottom:0; grid-column: 1 / -1;" data-menu-role="admin">
             <div class="panel__header">
               <div>
-                <h2>Filter Grafik</h2>
-                <div class="panel__header-sub">Pilih karyawan untuk melihat grafik miliknya sendiri</div>
+                <h2>Filter Statistik Kehadiran</h2>
+                <div class="panel__header-sub">Pilih karyawan untuk melihat statistik kehadiran per staff</div>
               </div>
               <select id="chartStaffFilter" class="select-filter" style="min-width: 200px;">
                 <option value="all">Semua Karyawan</option>
@@ -306,7 +309,7 @@
             <div class="panel__header">
               <div>
                 <h2>Grafik Kehadiran Bulanan</h2>
-                <div class="panel__header-sub">Per minggu, bulan berjalan</div>
+                <div class="panel__header-sub" id="monthlyChartSubtitle">Per minggu, bulan berjalan</div>
               </div>
             </div>
             <div style="height:260px;">
