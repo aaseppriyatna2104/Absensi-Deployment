@@ -30,6 +30,23 @@
     }
   })();
 </script>
+<script>
+  // Anti-flash menu: terapkan role (admin/staff) ke <html> SEBELUM
+  // sidebar dirender, supaya menu khusus admin bisa langsung
+  // disembunyikan lewat CSS (lihat [data-role="staff"] di
+  // css/style.css) tanpa sempat "kedip" muncul dulu baru hilang
+  // setelah JS di core.js selesai jalan (dulu nyembunyiinnya baru
+  // terjadi di DOMContentLoaded, paling bawah <body> — kelihatan
+  // nge-jump tiap pindah halaman untuk akun staff).
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (session && session.role) {
+        document.documentElement.setAttribute("data-role", session.role);
+      }
+    } catch (e) { /* biarkan JS di core.js yang urus fallback-nya */ }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Absensi — Absensi Karyawan</title>
 
@@ -76,7 +93,7 @@
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 3v4M8 3v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Jadwal</span>
       </a>
-      <a href="riwayat.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="riwayat.html" class="nav-menu__item" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Riwayat</span>
       </a>
@@ -84,11 +101,11 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="17" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Kelola Data</span>
       </a>
-      <a href="persetujuan-profil.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="persetujuan-profil.html" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Persetujuan Profil</span>
       </a>
-      <a href="kelola-kunci-profil.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="kelola-kunci-profil.html" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Kelola Kunci Profil</span>
       </a>

@@ -2,12 +2,33 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
+<script>
+  // Guard login + admin-only: halaman ini bisa menghapus data
+  // lokal siapa pun yang membukanya, jadi jangan biarkan bisa
+  // diakses tanpa login sama sekali (sebelumnya halaman ini ga
+  // punya guard apa pun).
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (!session || !session.username) {
+        window.location.replace("login.html");
+        return;
+      }
+      if (session.role !== "admin") {
+        window.location.replace("absensi.html");
+      }
+    } catch (e) {
+      window.location.replace("login.html");
+    }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hapus Data Demo - Absensi Karyawan</title>
 <style>
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     display: flex;
+
     align-items: center;
     justify-content: center;
     min-height: 100vh;

@@ -30,6 +30,23 @@
     }
   })();
 </script>
+<script>
+  // Anti-flash menu: terapkan role (admin/staff) ke <html> SEBELUM
+  // sidebar dirender, supaya menu khusus admin bisa langsung
+  // disembunyikan lewat CSS (lihat [data-role="staff"] di
+  // css/style.css) tanpa sempat "kedip" muncul dulu baru hilang
+  // setelah JS di core.js selesai jalan (dulu nyembunyiinnya baru
+  // terjadi di DOMContentLoaded, paling bawah <body> — kelihatan
+  // nge-jump tiap pindah halaman untuk akun staff).
+  (function () {
+    try {
+      var session = JSON.parse(localStorage.getItem("session_user"));
+      if (session && session.role) {
+        document.documentElement.setAttribute("data-role", session.role);
+      }
+    } catch (e) { /* biarkan JS di core.js yang urus fallback-nya */ }
+  })();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard — Absensi Karyawan</title>
 
@@ -78,7 +95,7 @@
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 3v4M8 3v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Jadwal</span>
       </a>
-      <a href="riwayat.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="riwayat.html" class="nav-menu__item" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Riwayat</span>
       </a>
@@ -86,11 +103,11 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="17" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Kelola Data</span>
       </a>
-      <a href="persetujuan-profil.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="persetujuan-profil.html" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Persetujuan Profil</span>
       </a>
-      <a href="kelola-kunci-profil.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="kelola-kunci-profil.html" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Kelola Kunci Profil</span>
       </a>
@@ -183,15 +200,6 @@
           <div class="stat-card__label">Total jam kerja hari ini</div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-card__top">
-            <div class="stat-card__icon stat-card__icon--red">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            </div>
-          </div>
-          <div class="stat-card__value mono" id="todayAlpha">0</div>
-          <div class="stat-card__label">Alpha hari ini</div>
-        </div>
       </section>
 
       <!-- ============ DASHBOARD STATISTIK (data nyata dari sistem) ============ -->
@@ -247,9 +255,41 @@
             <div class="stat-card__value mono" id="dashStatPersentase">0%</div>
             <div class="stat-card__label">Persentase Kehadiran</div>
           </div>
+
+          <div class="stat-card">
+            <div class="stat-card__top">
+              <div class="stat-card__icon stat-card__icon--blue">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3 3v18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 15l4-4 3 3 5-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="stat-card__value mono" id="dashStatRataHadir">0</div>
+            <div class="stat-card__label">Rata-rata Kehadiran / Bulan</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card__top">
+              <div class="stat-card__icon stat-card__icon--teal">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6l4 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+            </div>
+            <div class="stat-card__value mono" id="dashStatRataJamKerja">00:00:00</div>
+            <div class="stat-card__label">Rata-rata Jam Kerja / Bulan</div>
+          </div>
         </div>
 
         <div class="dashboard-grid">
+          <div class="panel" style="margin-bottom:0; grid-column: 1 / -1;" data-menu-role="admin">
+            <div class="panel__header">
+              <div>
+                <h2>Filter Grafik</h2>
+                <div class="panel__header-sub">Pilih karyawan untuk melihat grafik miliknya sendiri</div>
+              </div>
+              <select id="chartStaffFilter" class="select-filter" style="min-width: 200px;">
+                <option value="all">Semua Karyawan</option>
+              </select>
+            </div>
+          </div>
+
           <div class="panel" style="margin-bottom:0;">
             <div class="panel__header">
               <div>
@@ -272,6 +312,61 @@
             <div style="height:260px;">
               <canvas id="monthlyAttendanceChart"></canvas>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ TABEL STATUS KARYAWAN & INFO SISTEM (khusus admin) ============ -->
+      <section class="panel" data-menu-role="admin" id="employeeStatusSection">
+        <div class="panel__header">
+          <div>
+            <h2>Status Karyawan Hari Ini</h2>
+            <div class="panel__header-sub">Ringkasan kehadiran seluruh karyawan, real-time</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Status</th>
+                <th>Jam Masuk</th>
+                <th>Jam Keluar</th>
+                <th>Jam Kerja Hari Ini</th>
+                <th>Kehadiran Bulan Ini</th>
+                <th>Profil</th>
+              </tr>
+            </thead>
+            <tbody id="employeeStatusTableBody">
+              <tr><td colspan="7" style="text-align:center; padding: var(--sp-6) 0;">Memuat data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel" data-menu-role="admin" id="systemInfoSection">
+        <div class="panel__header">
+          <div>
+            <h2>Info Sistem</h2>
+            <div class="panel__header-sub">Ringkasan keseluruhan data presensi</div>
+          </div>
+        </div>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-card__value mono" id="sysInfoTotalKaryawan">0</div>
+            <div class="stat-card__label">Total Karyawan Aktif</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value mono" id="sysInfoTotalRecord">0</div>
+            <div class="stat-card__label">Total Record Presensi</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value mono" id="sysInfoRentangTanggal">-</div>
+            <div class="stat-card__label">Rentang Tanggal Data</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card__value mono" id="sysInfoUpdateTerakhir">-</div>
+            <div class="stat-card__label">Update Terakhir</div>
           </div>
         </div>
       </section>
