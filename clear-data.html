@@ -11,14 +11,14 @@
     try {
       var session = JSON.parse(localStorage.getItem("session_user"));
       if (!session || !session.username) {
-        window.location.replace("login.html");
+        window.location.replace("/login");
         return;
       }
       if (session.role !== "admin") {
-        window.location.replace("absensi.html");
+        window.location.replace("/absensi");
       }
     } catch (e) {
-      window.location.replace("login.html");
+      window.location.replace("/login");
     }
   })();
 </script>
@@ -95,7 +95,7 @@
     
     result.style.display = 'block';
     result.innerHTML = `<p style="color: #2E9678; font-weight: 500;">Semua data localStorage telah dihapus.</p>
-                       <p style="font-size: 0.875rem; margin-top: 0.5rem;">Silakan tutup halaman ini dan kembali ke <a href="login.html">login.html</a></p>`;
+                       <p style="font-size: 0.875rem; margin-top: 0.5rem;">Silakan tutup halaman ini dan kembali ke <a href="/login">halaman login</a></p>`;
   });
 </script>
 </body>

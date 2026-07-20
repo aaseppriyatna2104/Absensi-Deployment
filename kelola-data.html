@@ -23,14 +23,14 @@
     try {
       var session = JSON.parse(localStorage.getItem("session_user"));
       if (!session || !session.username) {
-        window.location.replace("login.html");
+        window.location.replace("/login");
         return;
       }
       if (session.role !== "admin") {
-        window.location.replace("absensi.html");
+        window.location.replace("/absensi");
       }
     } catch (e) {
-      window.location.replace("login.html");
+      window.location.replace("/login");
     }
   })();
 </script>
@@ -244,35 +244,35 @@
 
     <span class="sidebar__section-label">Menu</span>
     <nav class="nav-menu">
-      <a href="index.html" class="nav-menu__item" data-menu-role="admin">
+      <a href="/" class="nav-menu__item" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M3 10.5L12 3l9 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 9.5V20a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1V9.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Dashboard</span>
       </a>
-      <a href="absensi.html" class="nav-menu__item">
+      <a href="/absensi" class="nav-menu__item">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>Absensi</span>
       </a>
-      <a href="jadwal.html" class="nav-menu__item">
+      <a href="/jadwal" class="nav-menu__item">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 3v4M8 3v4M3 10h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Jadwal</span>
       </a>
-      <a href="riwayat.html" class="nav-menu__item" data-menu-hide="admin">
+      <a href="/riwayat" class="nav-menu__item" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Riwayat</span>
       </a>
-      <a href="kelola-data.html" class="nav-menu__item is-active" data-menu-role="admin">
+      <a href="/kelola-data" class="nav-menu__item is-active" data-menu-role="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="18" cy="17" r="2.2" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Kelola Data</span>
       </a>
-      <a href="persetujuan-profil.html" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
+      <a href="/persetujuan-profil" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/></svg>
         <span>Persetujuan Profil</span>
       </a>
-      <a href="kelola-kunci-profil.html" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
+      <a href="/kelola-kunci-profil" class="nav-menu__item" data-menu-role="admin" data-menu-hide="admin">
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Kelola Kunci Profil</span>
       </a>
-      <a href="profil.html" class="nav-menu__item">
+      <a href="/profil" class="nav-menu__item">
         <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.4-3.6 4.4-5.5 7.5-5.5s6.1 1.9 7.5 5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span>Profil</span>
       </a>
@@ -312,15 +312,15 @@
         <div class="topbar__breadcrumb">Edit atau hapus data presensi (khusus admin)</div>
       </div>
       <div class="topbar__right">
-        <a href="riwayat.html" class="btn btn--secondary" style="text-decoration: none;">
+        <a href="/riwayat" class="btn btn--secondary" style="text-decoration: none;">
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M12 7v5l3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/></svg>
           Lihat Riwayat
         </a>
-        <a href="persetujuan-profil.html" class="btn btn--secondary" style="text-decoration: none;">
+        <a href="/persetujuan-profil" class="btn btn--secondary" style="text-decoration: none;">
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M9 11l3 3L22 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Persetujuan Profil
         </a>
-        <a href="kelola-kunci-profil.html" class="btn btn--secondary" style="text-decoration: none;">
+        <a href="/kelola-kunci-profil" class="btn btn--secondary" style="text-decoration: none;">
           <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           Kelola Kunci Profil
         </a>

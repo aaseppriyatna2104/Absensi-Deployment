@@ -20,7 +20,7 @@
     try {
       var session = JSON.parse(localStorage.getItem("session_user"));
       if (session && session.username) {
-        window.location.replace("index.html");
+        window.location.replace("/");
       }
     } catch (e) { /* biarkan tampil form login seperti biasa */ }
   })();
@@ -200,7 +200,7 @@
       }
 
       window.showToast(`Selamat datang, ${session.nama}!`, "success", 1500);
-      setTimeout(() => { window.location.href = "index.html"; }, 500);
+      setTimeout(() => { window.location.href = "/"; }, 500);
     });
   });
 </script>
