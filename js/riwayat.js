@@ -57,21 +57,21 @@
   }
 
   /**
-   * Menghitung jumlah hari kerja (Senin–Jumat) dari `start` sampai
-   * `end` (inklusif) — dipakai sebagai penyebut Persentase Kehadiran.
+   * Menghitung jumlah SEMUA hari (termasuk weekend) dari `start`
+   * sampai `end` (inklusif) — dipakai sebagai penyebut Persentase
+   * Kehadiran & Total Alpha. Basis hitungnya sengaja disamakan
+   * dengan Dashboard (js/dashboard-stats.js) dan Kalender Kehadiran
+   * di Kelola Data, yang juga menandai weekend tanpa data sebagai
+   * Alpha — supaya angka Total Alpha di Riwayat staff konsisten
+   * dengan yang dilihat admin untuk staff yang sama & periode yang
+   * sama.
    * @param {Date} start
    * @param {Date} end
    * @returns {number}
    */
-  function countWeekdays(start, end) {
-    let count = 0;
-    const cursor = new Date(start);
-    while (cursor <= end) {
-      const day = cursor.getDay();
-      if (day !== 0 && day !== 6) count++;
-      cursor.setDate(cursor.getDate() + 1);
-    }
-    return count;
+  function countAllDays(start, end) {
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return Math.floor((startOfDay(end) - startOfDay(start)) / msPerDay) + 1;
   }
 
   /**
@@ -183,23 +183,31 @@
    * record yang sudah difilter.
    *
    * Untuk admin, `records` bisa berisi data BANYAK karyawan
-   * sekaligus — supaya Persentase Kehadiran tetap masuk akal,
-   * penyebutnya dikalikan dengan jumlah karyawan unik yang muncul
-   * di data (bukan cuma jumlah hari kerja).
+   * sekaligus — supaya Total Alpha & Persentase Kehadiran tetap
+   * akurat, jumlah karyawan diambil dari daftar staff RESMI
+   * (window.Auth.USERS), BUKAN dari nama yang kebetulan muncul di
+   * `records`. Kalau diambil dari `records`, staff yang alpha
+   * penuh sepanjang periode (nggak pernah check-in sama sekali)
+   * jadi tidak ikut kehitung — bikin Total Alpha di Dashboard admin
+   * lebih rendah dari total kalau dijumlah manual dari Riwayat
+   * masing-masing staff.
    * @param {Array<object>} records
-   * @param {number} workingDays - jumlah hari kerja pada periode terpilih
+   * @param {number} totalDays - jumlah hari (termasuk weekend) pada periode terpilih
    */
-  function renderStats(records, workingDays) {
+  function renderStats(records, totalDays) {
     const totalHadir = records.filter(isHadir).length;
     const totalDetik = records.reduce((sum, r) => sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0), 0);
 
-    const uniqueEmployeeCount = new Set(records.map((r) => r.nama)).size || 1;
-    const denominator = workingDays * uniqueEmployeeCount;
+    const isAdmin = CURRENT_EMPLOYEE.role === "admin";
+    const employeeCount = isAdmin
+      ? ((window.Auth && window.Auth.USERS) || []).filter((u) => u.role === "staff").length || 1
+      : 1;
+    const denominator = totalDays * employeeCount;
     const persentase = denominator > 0
       ? Math.min(100, Math.round((totalHadir / denominator) * 100))
       : 0;
 
-    // Hitung alpha: jumlah hari kerja dikali jumlah karyawan dikurangi total hadir
+    // Hitung alpha: jumlah semua hari (termasuk weekend) dikali jumlah karyawan, dikurangi total hadir
     const totalAlpha = Math.max(0, denominator - totalHadir);
 
     document.getElementById("statTotalHadir").textContent = totalHadir;
@@ -241,11 +249,11 @@
       return d >= start && d <= end;
     }).sort((a, b) => b.date - a.date);
 
-    const workingDays = countWeekdays(start, end);
+    const totalDays = countAllDays(start, end);
 
     document.getElementById("riwayatPeriodeLabel").textContent = label;
     renderTable(filtered);
-    renderStats(filtered, workingDays);
+    renderStats(filtered, totalDays);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
