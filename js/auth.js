@@ -48,7 +48,7 @@
    */
   function logout() {
     localStorage.removeItem("session_user");
-    window.location.href = "login.html";
+    window.location.href = "/login";
   }
 
   /**

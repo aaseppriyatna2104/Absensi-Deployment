@@ -7,10 +7,11 @@
    ringkas (mengurangi jumlah file/path yang perlu ter-deploy
    dengan benar). File khusus per halaman tetap terpisah:
    attendance.js (Absensi), riwayat.js (Riwayat),
-   dashboard-stats.js (Dashboard), validation.js (Profil).
+   dashboard-stats.js (Dashboard), profil.js (Profil, termasuk
+   validasi form — lihat catatan di js/profil.js).
 
    Urutan bagian di bawah ini penting:
-   1. local-db.js     -> mendefinisikan window.db
+   1. firebase-config.js -> mendefinisikan window.db (Firestore)
    2. app-config.js   -> mendefinisikan CURRENT_EMPLOYEE
    3. theme.js        -> dark mode
    4. toast.js        -> window.showToast
@@ -365,17 +366,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Redirect staff jika mencoba akses halaman yang tidak boleh
   const currentPath = window.location.pathname;
-  const currentPage = currentPath.split("/").pop() || "index.html";
-  
+  // Dukung URL bersih (tanpa .html, hasil Vercel cleanUrls) sekaligus
+  // URL lama (dengan .html) supaya tetap aman kalau dibuka langsung.
+  const currentPage = (currentPath.split("/").pop() || "index").replace(/\.html$/, "") || "index";
+
   if (!isAdmin) {
-    // Staff hanya boleh akses absensi.html, riwayat.html, profil.html,
-    // dan jadwal.html. (riwayat.html ditambahkan supaya konsisten
+    // Staff hanya boleh akses absensi, riwayat, profil,
+    // dan jadwal. (riwayat ditambahkan supaya konsisten
     // dengan menu sidebar yang sekarang menampilkan link Riwayat
     // untuk staff juga — sebelumnya link-nya kelihatan tapi user
-    // langsung dilempar balik ke absensi.html begitu diklik.)
-    const allowedPages = ["absensi.html", "riwayat.html", "profil.html", "jadwal.html"];
+    // langsung dilempar balik ke absensi begitu diklik.)
+    const allowedPages = ["absensi", "riwayat", "profil", "jadwal"];
     if (!allowedPages.includes(currentPage)) {
-      window.location.href = "absensi.html";
+      window.location.href = "/absensi";
     }
   }
 

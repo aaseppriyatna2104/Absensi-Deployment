@@ -1,9 +1,7 @@
 /* =========================================================
    DASHBOARD STATISTIK — kartu ringkasan + grafik Chart.js,
-   sumber data lewat "db" (js/local-db.js), polyfill localStorage
-   yang meniru API Firebase Firestore. Sama seperti file lain,
-   ini bisa langsung dipakai ulang dengan Firestore asli tanpa
-   perlu diubah.
+   sumber data lewat "db" (Firebase Firestore, lihat
+   js/firebase-config.js).
    ========================================================= */
 
 (function () {
@@ -562,7 +560,7 @@
         <td class="mono">${row.jamKerja}</td>
         <td class="mono">${row.hadirBulanIni}/${row.workingDaysSoFar} hari</td>
         <td>
-          <a href="kelola-kunci-profil.html?cari=${encodeURIComponent(row.nama)}" class="btn btn--secondary" style="text-decoration:none; padding: 4px 10px; font-size: var(--fs-xs);">
+          <a href="/kelola-kunci-profil?cari=${encodeURIComponent(row.nama)}" class="btn btn--secondary" style="text-decoration:none; padding: 4px 10px; font-size: var(--fs-xs);">
             Lihat Profil
           </a>
         </td>
@@ -703,7 +701,7 @@
     if (!weeklyCanvas) return; // bukan halaman Dashboard
 
     if (typeof db === "undefined") {
-      console.error("Gagal memuat modul penyimpanan (js/local-db.js).");
+      console.error("Gagal memuat modul penyimpanan (js/firebase-config.js).");
       window.showToast("Gagal memuat modul penyimpanan data.", "error");
       return;
     }

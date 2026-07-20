@@ -1,9 +1,6 @@
 /* =========================================================
-   RIWAYAT — membaca data presensi lewat "db" (js/local-db.js),
-   sebuah polyfill localStorage yang meniru API Firebase
-   Firestore (collection/where/onSnapshot). Karena bentuk
-   pemanggilannya sama, file ini nanti bisa langsung dipakai
-   ulang dengan Firestore asli tanpa perlu diubah.
+   RIWAYAT — membaca data presensi lewat "db" (Firebase
+   Firestore, lihat js/firebase-config.js).
    ========================================================= */
 
 (function () {
@@ -259,7 +256,7 @@
     if (typeof db === "undefined") {
       tableBody.innerHTML = `
         <tr><td colspan="${TABLE_COLUMN_COUNT}" style="text-align:center; color: var(--color-text-faint); padding: var(--sp-6) 0;">
-          Gagal memuat modul penyimpanan (js/local-db.js).
+          Gagal memuat modul penyimpanan (js/firebase-config.js).
         </td></tr>`;
       return;
     }
