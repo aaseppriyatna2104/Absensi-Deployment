@@ -67,8 +67,15 @@
 
   /** Membentuk markup badge status untuk satu baris. @param {object} r @returns {string} */
   function statusBadge(r) {
-    if (!r.checkIn) return '<span class="status-badge status-badge--alpha">Alpha</span>';
-    return '<span class="status-badge status-badge--hadir">Hadir</span>';
+    // Prioritas cek field `status` eksplisit dulu — bukan cuma
+    // `r.checkIn` — supaya entri manual "Hadir tanpa jam" (dari admin,
+    // checkIn null tapi status="hadir") tetap kebaca Hadir. Untuk data
+    // absen normal hasilnya sama saja karena status "hadir" selalu
+    // dibarengi checkIn yang beneran ada.
+    if (r.status === "hadir" || r.checkIn) {
+      return '<span class="status-badge status-badge--hadir">Hadir</span>';
+    }
+    return '<span class="status-badge status-badge--alpha">Alpha</span>';
   }
 
   /**
@@ -421,10 +428,16 @@
       let statusHtml = "";
 
       if (attendance) {
-        if (attendance.checkOut) {
+        if (attendance.status === "hadir" && !attendance.checkIn) {
+          // Entri manual "Hadir tanpa jam" — status eksplisit "hadir"
+          // tapi tidak ada checkIn/checkOut sama sekali.
+          statusHtml = `<div class="calendar-status calendar-status--hadir">✓ Hadir</div>`;
+        } else if (attendance.checkOut) {
           statusHtml = `<div class="calendar-status calendar-status--hadir">✓ Hadir</div>`;
         } else if (attendance.checkIn) {
           statusHtml = `<div class="calendar-status calendar-status--working">⏳ Bekerja</div>`;
+        } else {
+          statusHtml = `<div class="calendar-status calendar-status--alpha">✗ Alpha</div>`;
         }
       } else {
         statusHtml = `<div class="calendar-status calendar-status--alpha">✗ Alpha</div>`;
