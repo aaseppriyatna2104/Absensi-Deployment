@@ -389,6 +389,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // PDF Download functionality (admin only)
   document.querySelectorAll("[data-download-pdf]").forEach((btn) => {
+    // Beberapa halaman (mis. Riwayat) sudah punya handler PDF sendiri
+    // yang menghasilkan laporan terstruktur (bukan screenshot).
+    // Tombol itu ditandai data-pdf-custom di HTML-nya supaya handler
+    // generik di sini di-skip — sebelumnya kedua handler ini nempel
+    // bareng di tombol yang sama dan sama-sama jalan tiap diklik,
+    // jadinya download PDF dobel (2 file sekaligus) dari 1 klik.
+    if (btn.hasAttribute("data-pdf-custom")) return;
+
     btn.addEventListener("click", () => {
       const session = getSessionUser();
       if (!session || session.role !== "admin") {

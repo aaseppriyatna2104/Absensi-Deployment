@@ -39,8 +39,6 @@
    * @param {string} period - Period description (e.g., "Bulan Juli 2026")
    */
   function generateAttendanceReport(records, title, period) {
-    console.log("generateAttendanceReport called with", records.length, "records");
-    console.log("Records data:", JSON.stringify(records, null, 2));
     
     if (typeof html2pdf === "undefined") {
       window.showToast("Library PDF tidak tersedia. Cek koneksi internet.", "error");
@@ -60,21 +58,24 @@
       return dateB - dateA;
     });
 
-    console.log("Sorted records:", sortedRecords);
+
+    // Menentukan "Hadir": cek field `status` eksplisit dulu (bukan cuma
+    // `checkIn`) supaya entri manual "Hadir tanpa jam" dari Kelola Data
+    // (checkIn null tapi status="hadir") tetap terhitung Hadir di laporan —
+    // konsisten dengan logika yang sama di kelola-data.js, riwayat.js,
+    // dan dashboard-stats.js.
+    const isHadir = (r) => r.status === "hadir" || !!r.checkIn;
 
     // Calculate statistics
-    const totalHadir = sortedRecords.filter(r => r.checkIn).length;
+    const totalHadir = sortedRecords.filter(isHadir).length;
     const totalAlpha = sortedRecords.length - totalHadir;
     const totalDetik = sortedRecords.reduce((sum, r) => {
       return sum + (r.checkIn && r.checkOut ? (r.totalJamKerjaDetik || 0) : 0);
     }, 0);
 
-    console.log("Stats - Hadir:", totalHadir, "Alpha:", totalAlpha, "Total Detik:", totalDetik);
-
     // Generate table rows HTML
     let tableRows = '';
     sortedRecords.forEach((record, index) => {
-      console.log("Processing record", index, ":", record);
       
       // Handle date format - support both "YYYY-MM-DD" and ISO datetime
       let date;
@@ -94,7 +95,7 @@
       const checkInTime = record.checkIn ? formatClock(new Date(record.checkIn)) : "-";
       const checkOutTime = record.checkOut ? formatClock(new Date(record.checkOut)) : "-";
       const workTime = record.checkIn && record.checkOut ? formatDuration(record.totalJamKerjaDetik || 0) : "-";
-      const status = record.checkIn ? "Hadir" : "Alpha";
+      const status = isHadir(record) ? "Hadir" : "Alpha";
       const statusColor = status === "Hadir" ? "#2E9678" : "#D9534F";
       const bgColor = index % 2 === 0 ? "#ffffff" : "#f8f9fa";
       
@@ -112,7 +113,6 @@
       `;
     });
 
-    console.log("Table rows generated, length:", tableRows.length);
 
     // Generate HTML for PDF
     const reportHTML = `
@@ -200,8 +200,6 @@
       </div>
     `;
 
-    console.log("Report HTML generated, length:", reportHTML.length);
-    console.log("Report HTML preview:", reportHTML.substring(0, 500));
 
     // PDF configuration
     const opt = {
@@ -213,7 +211,6 @@
       pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
-    console.log("Starting PDF generation");
 
     // Generate and download PDF.
     // PENTING: elemen HARUS terlihat oleh html2canvas untuk bisa di-capture.
@@ -230,14 +227,10 @@
     element.style.padding = '20px';
     document.body.appendChild(element);
 
-    console.log("Element added to DOM, innerHTML length:", element.innerHTML.length);
-    console.log("Element content preview:", element.innerHTML.substring(0, 200));
 
     // Delay untuk memastikan elemen sepenuhnya dirender sebelum capture
     setTimeout(() => {
-      console.log("Starting html2pdf generation");
       html2pdf().set(opt).from(element).save().then(() => {
-        console.log("PDF saved successfully");
         document.body.removeChild(element);
         window.showToast("Laporan PDF berhasil diunduh!", "success");
       }).catch(err => {

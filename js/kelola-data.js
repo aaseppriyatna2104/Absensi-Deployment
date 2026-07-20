@@ -548,6 +548,52 @@
   }
 
   /**
+   * Export tabel "Semua Data Presensi" ke PDF laporan terstruktur
+   * (bukan screenshot) — memakai generator yang sama dengan
+   * halaman Riwayat (js/pdf-report.js), supaya format laporan
+   * PDF konsisten di seluruh aplikasi. Menghormati filter
+   * pencarian nama yang sedang aktif di kotak cari, supaya data
+   * yang diexport sama dengan yang sedang terlihat di layar.
+   */
+  function exportTableToPDF() {
+    const searchTerm = (document.getElementById("searchInput").value || "").trim().toLowerCase();
+    let records = allRecords.slice().sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+    if (searchTerm) {
+      records = records.filter((r) => r.nama.toLowerCase().includes(searchTerm));
+    }
+
+    if (typeof window.generateAttendanceReport !== "function") {
+      window.showToast("Fungsi PDF tidak tersedia.", "error");
+      return;
+    }
+
+    const title = searchTerm ? `Semua Data Presensi — filter "${searchTerm}"` : "Semua Data Presensi";
+    window.generateAttendanceReport(records, title, `${records.length} data presensi`);
+  }
+
+  /**
+   * Export tabel "Semua Data Presensi" ke Excel (.xlsx), menghormati
+   * filter pencarian nama yang sedang aktif — sama seperti
+   * exportTableToPDF, supaya isi file Excel & PDF selalu konsisten
+   * dengan apa yang sedang terlihat di layar.
+   */
+  function exportTableToExcel() {
+    const searchTerm = (document.getElementById("searchInput").value || "").trim().toLowerCase();
+    let records = allRecords.slice().sort((a, b) => b.tanggal.localeCompare(a.tanggal));
+    if (searchTerm) {
+      records = records.filter((r) => r.nama.toLowerCase().includes(searchTerm));
+    }
+
+    if (typeof window.generateAttendanceExcel !== "function") {
+      window.showToast("Fungsi Excel tidak tersedia.", "error");
+      return;
+    }
+
+    const prefix = searchTerm ? `Data-Presensi-${searchTerm}` : "Data-Presensi-Semua";
+    window.generateAttendanceExcel(records, prefix);
+  }
+
+  /**
    * Mengisi dropdown karyawan di form Input Manual Presensi.
    * Sumber data sama seperti dropdown kalender: window.Auth.USERS.
    */
@@ -751,5 +797,9 @@
 
     // Export calendar to PDF
     document.getElementById("btnExportCalendar").addEventListener("click", exportCalendarToPDF);
+
+    // Export tabel "Semua Data Presensi" ke PDF laporan terstruktur
+    document.getElementById("btnDownloadPDF").addEventListener("click", exportTableToPDF);
+    document.getElementById("btnExportExcel").addEventListener("click", exportTableToExcel);
   });
 })();

@@ -312,34 +312,58 @@
       applyFilter(currentFilter, allRecords);
     });
 
-    // PDF Download button handler
+    // PDF & Excel Download button handler — dua-duanya pakai data
+    // mentah yang sama (rawData), supaya isi file PDF & Excel selalu
+    // konsisten dengan periode filter yang sedang aktif.
+    function getFilteredRawData() {
+      const today = new Date();
+      const { start } = getRange(currentFilter, today);
+      const end = startOfDay(today);
+
+      const filtered = allRecords.filter((r) => {
+        const d = startOfDay(r.date);
+        return d >= start && d <= end;
+      });
+
+      return filtered.map(r => ({
+        tanggal: r.date.toISOString().split('T')[0],
+        nama: r.nama,
+        checkIn: r.checkIn ? r.checkIn.toISOString() : null,
+        checkOut: r.checkOut ? r.checkOut.toISOString() : null,
+        totalJamKerjaDetik: r.totalJamKerjaDetik,
+        status: r.status,
+        checkInLat: r.checkInLat,
+        checkInLong: r.checkInLong,
+        checkOutLat: r.checkOutLat,
+        checkOutLong: r.checkOutLong,
+      }));
+    }
+
     const pdfBtn = document.querySelector("[data-download-pdf]");
     if (pdfBtn) {
       pdfBtn.addEventListener("click", () => {
         const { label } = getRange(currentFilter, new Date());
-        const today = new Date();
-        const { start } = getRange(currentFilter, today);
-        const end = startOfDay(today);
-        
-        const filtered = allRecords.filter((r) => {
-          const d = startOfDay(r.date);
-          return d >= start && d <= end;
-        });
-
-        // Convert records back to raw data format for PDF generator
-        const rawData = filtered.map(r => ({
-          tanggal: r.date.toISOString().split('T')[0],
-          nama: r.nama,
-          checkIn: r.checkIn ? r.checkIn.toISOString() : null,
-          checkOut: r.checkOut ? r.checkOut.toISOString() : null,
-          totalJamKerjaDetik: r.totalJamKerjaDetik,
-          status: r.status
-        }));
+        const rawData = getFilteredRawData();
 
         if (typeof window.generateAttendanceReport === "function") {
           window.generateAttendanceReport(rawData, "Laporan Kehadiran", label);
         } else {
           window.showToast("Fungsi PDF tidak tersedia.", "error");
+        }
+      });
+    }
+
+    const excelBtn = document.getElementById("btnExportExcelRiwayat");
+    if (excelBtn) {
+      excelBtn.addEventListener("click", () => {
+        const rawData = getFilteredRawData();
+        const isAdminView = CURRENT_EMPLOYEE.role === "admin";
+        const prefix = isAdminView ? `Riwayat-Semua-${currentFilter}` : `Riwayat-${CURRENT_EMPLOYEE.nama}-${currentFilter}`;
+
+        if (typeof window.generateAttendanceExcel === "function") {
+          window.generateAttendanceExcel(rawData, prefix);
+        } else {
+          window.showToast("Fungsi Excel tidak tersedia.", "error");
         }
       });
     }
