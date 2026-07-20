@@ -55,6 +55,7 @@
 
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -216,10 +217,16 @@
             <h2>Rekap Presensi</h2>
             <div class="panel__header-sub" id="riwayatPeriodeLabel">Menampilkan data hari ini</div>
           </div>
-          <button class="btn btn--secondary" data-download-pdf data-pdf-target="riwayat-content" data-menu-role="admin">
-            <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Download PDF
-          </button>
+          <div style="display: flex; gap: var(--sp-3);">
+            <button class="btn btn--secondary" data-download-pdf data-pdf-target="riwayat-content" data-pdf-custom data-menu-role="admin">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Download PDF
+            </button>
+            <button class="btn btn--secondary" id="btnExportExcelRiwayat" data-menu-role="admin">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export Excel
+            </button>
+          </div>
         </div>
 
         <div class="tab-row" id="filterTabs">
@@ -262,6 +269,7 @@
 <script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/pdf-report.js"></script>
+<script src="js/excel-report.js"></script>
 <script src="js/riwayat.js"></script>
 </body>
 </html>

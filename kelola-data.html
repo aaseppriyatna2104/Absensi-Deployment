@@ -59,6 +59,7 @@
 
 <link rel="stylesheet" href="css/style.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -455,16 +456,20 @@
         </div>
       </section>
 
-      <section class="panel">
+      <section class="panel" id="kelolaTableSection">
         <div class="panel__header">
           <div>
             <h2>Semua Data Presensi</h2>
             <div class="panel__header-sub" id="kelolaCountLabel">Memuat data...</div>
           </div>
           <div style="display: flex; gap: var(--sp-3);">
-            <button class="btn btn--secondary" id="btnDownloadPDF">
+            <button class="btn btn--secondary" id="btnDownloadPDF" data-pdf-custom data-menu-role="admin">
               <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               Download PDF
+            </button>
+            <button class="btn btn--secondary" id="btnExportExcel" data-menu-role="admin">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Export Excel
             </button>
             <button class="btn btn--secondary" id="btnHapusSemua">
             <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -550,6 +555,7 @@
 <script src="js/auth.js"></script>
 <script src="js/core.js"></script>
 <script src="js/pdf-report.js"></script>
+<script src="js/excel-report.js"></script>
 <script src="js/kelola-data.js"></script>
 </body>
 </html>
