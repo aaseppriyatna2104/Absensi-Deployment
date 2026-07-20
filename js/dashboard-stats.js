@@ -8,6 +8,7 @@
 
 (function () {
   const DAY_LABELS_SHORT = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+  const MONTH_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 
   // Instance Chart.js disimpan supaya bisa di-destroy() sebelum
   // digambar ulang (mencegah grafik dobel saat data berubah).
@@ -21,6 +22,12 @@
   let latestToday = new Date();
   let selectedStaffFilter = "all";
   let staffDropdownPopulated = false;
+
+  // Bulan yang sedang dilihat di panel "Statistik Kehadiran" & grafik
+  // bulanan. Default = bulan berjalan; admin bisa ganti lewat dropdown
+  // #dashMonthFilter untuk lihat histori bulan-bulan sebelumnya.
+  let selectedMonthDate = new Date();
+  let monthDropdownPopulated = false;
 
   /** Menambahkan angka nol di depan kalau kurang dari 2 digit. @param {number} n @returns {string} */
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -57,6 +64,33 @@
     return d;
   }
 
+  /** Mengembalikan tanggal terakhir (jam di-nol-kan) di bulan yang sama dengan `date`. @param {Date} date @returns {Date} */
+  function endOfMonth(date) {
+    const d = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  /** Mengecek apakah `date` berada di bulan & tahun yang sama dengan `now`. @param {Date} date @param {Date} now @returns {boolean} */
+  function isSameMonth(date, now) {
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }
+
+  /**
+   * Menghitung jumlah SEMUA hari (termasuk Sabtu & Minggu) dari
+   * `start` sampai `end` (inklusif) — dipakai sebagai penyebut Total
+   * Alpha & Persentase Kehadiran di kartu Dashboard, supaya basis
+   * hitungnya sama dengan Kalender Kehadiran (yang juga menandai
+   * weekend tanpa data sebagai Alpha).
+   * @param {Date} start
+   * @param {Date} end
+   * @returns {number}
+   */
+  function countAllDays(start, end) {
+    const msPerDay = 24 * 60 * 60 * 1000;
+    return Math.floor((startOfDay(end) - startOfDay(start)) / msPerDay) + 1;
+  }
+
   /**
    * Menghitung jumlah hari kerja (Senin–Jumat) dari `start` sampai
    * `end` (inklusif) — dipakai sebagai penyebut Persentase Kehadiran.
@@ -83,6 +117,19 @@
   }
 
   /**
+   * Menentukan apakah sebuah record dihitung "Hadir". Cek field
+   * `status` eksplisit dulu — bukan cuma `checkIn` — supaya entri
+   * manual "Hadir tanpa jam" (dari Kelola Data, checkIn null tapi
+   * status="hadir") ikut terhitung. Konsisten dengan logic yang
+   * sama di kelola-data.js dan riwayat.js.
+   * @param {{checkIn: Date|null, status: string}} record
+   * @returns {boolean}
+   */
+  function isHadir(record) {
+    return record.status === "hadir" || !!record.checkIn;
+  }
+
+  /**
    * Mengubah satu record mentah dari penyimpanan menjadi objek
    * siap-pakai untuk perhitungan kartu & grafik.
    * @param {object} data - data mentah dari db.collection("attendance")
@@ -101,25 +148,37 @@
   }
 
   /**
-   * Menghitung & menampilkan 4 kartu ringkasan bulan berjalan:
-   * Total Hadir, Total Jam Kerja, Total Alpha, Persentase Kehadiran.
+   * Menghitung & menampilkan 4 kartu ringkasan bulan yang dipilih di
+   * dropdown #dashMonthFilter (default bulan berjalan): Total Hadir,
+   * Total Jam Kerja, Total Alpha, Persentase Kehadiran.
    * @param {Array<object>} records - seluruh record presensi karyawan
-   * @param {Date} today
+   * @param {Date} monthDate - tanggal acuan bulan yang ditampilkan (bisa bulan lampau)
    */
-  function renderStatCards(records, today) {
-    const monthStart = startOfMonth(today);
-    const dayEnd = startOfDay(today);
+  function renderStatCards(records, monthDate) {
+    // Kalau admin pilih staff tertentu di dropdown "Filter Statistik
+    // Kehadiran", kartu ringkasan cuma menghitung data staff itu saja
+    // (bukan gabungan semua karyawan) — konsisten dengan grafik.
+    const filteredRecords = selectedStaffFilter === "all"
+      ? records
+      : records.filter((r) => r.nama === selectedStaffFilter);
 
-    const monthRecords = records.filter((r) => {
+    const monthStart = startOfMonth(monthDate);
+    const now = new Date();
+    // Kalau bulan yang dipilih adalah bulan berjalan, batasi sampai
+    // hari ini (bulan belum selesai). Kalau bulan lampau, hitung
+    // sampai tanggal terakhir bulan itu (sudah selesai penuh).
+    const dayEnd = isSameMonth(monthDate, now) ? startOfDay(now) : endOfMonth(monthDate);
+
+    const monthRecords = filteredRecords.filter((r) => {
       const d = startOfDay(r.date);
       return d >= monthStart && d <= dayEnd;
     });
 
-    const totalHadir = monthRecords.filter((r) => r.checkIn).length;
+    const totalHadir = monthRecords.filter(isHadir).length;
     const totalDetik = monthRecords.reduce((sum, r) => {
       return sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0);
     }, 0);
-    const workingDays = countWeekdays(monthStart, dayEnd);
+    const workingDays = countAllDays(monthStart, dayEnd);
 
     // Untuk admin (records berisi banyak karyawan sekaligus), penyebut
     // persentase dikalikan jumlah karyawan unik supaya tetap masuk akal.
@@ -129,7 +188,10 @@
       ? Math.min(100, Math.round((totalHadir / denominator) * 100))
       : 0;
 
-    // Hitung alpha: jumlah hari kerja dikali jumlah karyawan dikurangi total hadir
+    // Hitung alpha: jumlah SEMUA hari (termasuk weekend) dikali jumlah
+    // karyawan, dikurangi total hadir — konsisten dengan Kalender
+    // Kehadiran di Kelola Data yang juga menandai weekend tanpa data
+    // sebagai Alpha.
     const totalAlpha = Math.max(0, denominator - totalHadir);
 
     // Rata-rata Kehadiran/Bulan: rata-rata hari hadir per karyawan
@@ -172,14 +234,14 @@
       return d >= todayStart && d <= todayEnd;
     });
 
-    const todayHadir = todayRecords.filter((r) => r.checkIn).length;
+    const todayHadir = todayRecords.filter(isHadir).length;
     const todayDetik = todayRecords.reduce((sum, r) => {
       return sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0);
     }, 0);
 
-    // Hitung alpha: jumlah karyawan unik yang belum check-in hari ini
+    // Hitung alpha: jumlah karyawan unik yang belum hadir hari ini
     const uniqueEmployees = new Set(records.map((r) => r.nama));
-    const employeesToday = new Set(todayRecords.map((r) => r.nama));
+    const employeesToday = new Set(todayRecords.filter(isHadir).map((r) => r.nama));
     const todayAlpha = Math.max(0, uniqueEmployees.size - employeesToday.size);
 
     /** Helper kecil: set textContent kalau elemennya ada. @param {string} id @param {string|number} val */
@@ -221,7 +283,7 @@
       const isFuture = day > startOfDay(today);
       // Pakai filter() (bukan find()) supaya benar juga untuk admin,
       // yang datanya bisa berisi check-in beberapa karyawan di hari yang sama.
-      const dayRecords = filteredRecords.filter((r) => sameDate(r.date, day) && r.checkIn);
+      const dayRecords = filteredRecords.filter((r) => sameDate(r.date, day) && isHadir(r));
 
       const hadir = dayRecords.length;
       const alpha = (!isWeekend && !isFuture && dayRecords.length === 0) ? 1 : 0;
@@ -258,11 +320,12 @@
 
   /**
    * Menggambar grafik garis "Kehadiran Bulanan": jumlah hari hadir
-   * per kelompok minggu (Minggu 1–5) dalam bulan berjalan.
+   * per kelompok minggu (Minggu 1–5) dalam bulan yang dipilih di
+   * dropdown #dashMonthFilter (default bulan berjalan).
    * @param {Array<object>} records
-   * @param {Date} today
+   * @param {Date} monthDate - tanggal acuan bulan yang ditampilkan (bisa bulan lampau)
    */
-  function buildMonthlyChart(records, today) {
+  function buildMonthlyChart(records, monthDate) {
     const canvas = document.getElementById("monthlyAttendanceChart");
     if (!canvas || typeof Chart === "undefined") return;
 
@@ -270,7 +333,9 @@
       ? records
       : records.filter((r) => r.nama === selectedStaffFilter);
 
-    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+    const now = new Date();
+    const isCurrentMonth = isSameMonth(monthDate, now);
+    const daysInMonth = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0).getDate();
 
     const weekBuckets = [];
     for (let d = 1; d <= daysInMonth; d += 7) {
@@ -281,11 +346,13 @@
     const hadirData = weekBuckets.map((w) => {
       let count = 0;
       for (let day = w.from; day <= w.to; day++) {
-        const date = new Date(today.getFullYear(), today.getMonth(), day);
-        if (date > startOfDay(today)) continue;
+        const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), day);
+        // Cutoff "belum lewat hari ini" cuma relevan kalau yang
+        // ditampilkan bulan berjalan. Bulan lampau sudah selesai penuh.
+        if (isCurrentMonth && date > startOfDay(now)) continue;
         // filter().length (bukan find()) supaya benar juga untuk admin
         // yang datanya berisi check-in beberapa karyawan per hari.
-        count += filteredRecords.filter((r) => sameDate(r.date, date) && r.checkIn).length;
+        count += filteredRecords.filter((r) => sameDate(r.date, date) && isHadir(r)).length;
       }
       return count;
     });
@@ -454,14 +521,14 @@
 
     const rows = staffList.map((user) => {
       const todayRecord = records.find((r) =>
-        r.nama === user.nama && sameDate(r.date, today) && r.checkIn
+        r.nama === user.nama && sameDate(r.date, today) && isHadir(r)
       );
 
       const monthRecordsForUser = records.filter((r) =>
         r.nama === user.nama && startOfDay(r.date) >= monthStart && startOfDay(r.date) <= dayEnd
       );
-      const hadirBulanIni = monthRecordsForUser.filter((r) => r.checkIn).length;
-      const workingDaysSoFar = countWeekdays(monthStart, dayEnd);
+      const hadirBulanIni = monthRecordsForUser.filter(isHadir).length;
+      const workingDaysSoFar = countAllDays(monthStart, dayEnd);
 
       return {
         nama: user.nama,
@@ -564,11 +631,71 @@
 
     select.addEventListener("change", (e) => {
       selectedStaffFilter = e.target.value;
+      renderStatCards(latestRecords, selectedMonthDate);
       buildWeeklyChart(latestRecords, latestToday);
-      buildMonthlyChart(latestRecords, latestToday);
+      buildMonthlyChart(latestRecords, selectedMonthDate);
+      updateStatsPanelSubtitle();
     });
 
     staffDropdownPopulated = true;
+  }
+
+  /**
+   * Memformat Date jadi label "Bulan Tahun" berbahasa Indonesia.
+   * @param {Date} date
+   * @returns {string}
+   */
+  function monthLabel(date) {
+    return `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+  }
+
+  /**
+   * Menyesuaikan teks subjudul panel "Statistik Kehadiran" dan
+   * grafik bulanan supaya jelas bulan mana yang sedang ditampilkan.
+   */
+  function updateStatsPanelSubtitle() {
+    const now = new Date();
+    const monthPart = isSameMonth(selectedMonthDate, now)
+      ? "bulan berjalan"
+      : monthLabel(selectedMonthDate);
+    const staffPart = selectedStaffFilter === "all" ? "Anda" : selectedStaffFilter;
+
+    const statsSub = document.getElementById("statsPanelSubtitle");
+    if (statsSub) statsSub.textContent = `Berdasarkan data presensi ${staffPart} pada ${monthPart}`;
+
+    const chartSub = document.getElementById("monthlyChartSubtitle");
+    if (chartSub) chartSub.textContent = `Per minggu, ${monthPart}`;
+  }
+
+  /**
+   * Mengisi dropdown #dashMonthFilter dengan 12 bulan terakhir
+   * (bulan berjalan + 11 bulan ke belakang), lalu daftarkan event
+   * listener buat menampilkan ulang kartu statistik & grafik bulanan
+   * begitu admin/staff ganti bulan yang dipilih.
+   */
+  function setupMonthFilter() {
+    const select = document.getElementById("dashMonthFilter");
+    if (!select || monthDropdownPopulated) return;
+
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const option = document.createElement("option");
+      option.value = `${d.getFullYear()}-${d.getMonth()}`;
+      option.textContent = i === 0 ? `${monthLabel(d)} (berjalan)` : monthLabel(d);
+      select.appendChild(option);
+    }
+    select.value = `${now.getFullYear()}-${now.getMonth()}`;
+
+    select.addEventListener("change", (e) => {
+      const [y, m] = e.target.value.split("-").map(Number);
+      selectedMonthDate = new Date(y, m, 1);
+      renderStatCards(latestRecords, selectedMonthDate);
+      buildMonthlyChart(latestRecords, selectedMonthDate);
+      updateStatsPanelSubtitle();
+    });
+
+    monthDropdownPopulated = true;
   }
 
   document.addEventListener("DOMContentLoaded", () => {
@@ -599,9 +726,12 @@
         latestToday = today;
 
         renderTodayStats(records, today);
-        renderStatCards(records, today);
+        renderStatCards(records, selectedMonthDate);
         renderTimeline(records, today);
         renderWeeklySummary(records, today);
+
+        setupMonthFilter();
+        updateStatsPanelSubtitle();
 
         // Untuk admin, render tambahan tabel status karyawan dan info sistem
         if (isAdmin) {
@@ -614,7 +744,7 @@
         // (misal koneksi CDN lambat) — tunggu dulu sebelum menggambar.
         waitForChart(() => {
           buildWeeklyChart(records, today);
-          buildMonthlyChart(records, today);
+          buildMonthlyChart(records, selectedMonthDate);
         });
       }, (err) => {
         console.error("Gagal memuat statistik dashboard:", err);

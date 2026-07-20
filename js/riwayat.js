@@ -102,12 +102,25 @@
   }
 
   /**
+   * Menentukan apakah sebuah record dihitung "Hadir". Cek field
+   * `status` eksplisit dulu — bukan cuma `checkIn` — supaya entri
+   * manual "Hadir tanpa jam" (dari Kelola Data, checkIn null tapi
+   * status="hadir") tetap kebaca Hadir. Konsisten dengan logic yang
+   * sama di kelola-data.js dan dashboard-stats.js.
+   * @param {{checkIn: Date|null, status: string}} record
+   * @returns {boolean}
+   */
+  function isHadir(record) {
+    return record.status === "hadir" || !!record.checkIn;
+  }
+
+  /**
    * Membentuk markup <span> badge status untuk satu baris tabel.
    * @param {{checkIn: Date|null, status: string}} record
    * @returns {string} HTML badge
    */
   function statusBadge(record) {
-    if (!record.checkIn) {
+    if (!isHadir(record)) {
       return '<span class="status-badge status-badge--alpha">Alpha</span>';
     }
     return '<span class="status-badge status-badge--hadir">Hadir</span>';
@@ -180,7 +193,7 @@
    * @param {number} workingDays - jumlah hari kerja pada periode terpilih
    */
   function renderStats(records, workingDays) {
-    const totalHadir = records.filter((r) => r.checkIn).length;
+    const totalHadir = records.filter(isHadir).length;
     const totalDetik = records.reduce((sum, r) => sum + (r.checkIn && r.checkOut ? r.totalJamKerjaDetik : 0), 0);
 
     const uniqueEmployeeCount = new Set(records.map((r) => r.nama)).size || 1;
