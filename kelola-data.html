@@ -338,6 +338,62 @@
 
     <main class="content">
 
+      <!-- Input Manual Presensi (backfill data yang kelewat/lupa absen) -->
+      <section class="panel">
+        <div class="panel__header">
+          <div>
+            <h2>Input Manual Presensi</h2>
+            <div class="panel__header-sub">Untuk mengisi data hari yang terlewat/lupa absen. Entri manual akan ditandai berbeda dari absen normal.</div>
+          </div>
+        </div>
+
+        <form id="formInputManual" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--sp-4); align-items: start;">
+          <div class="form-field">
+            <label for="manualKaryawan">Karyawan</label>
+            <select id="manualKaryawan" required>
+              <option value="">Pilih karyawan...</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label for="manualTanggal">Tanggal</label>
+            <input type="date" id="manualTanggal" required>
+          </div>
+
+          <div class="form-field">
+            <label for="manualStatus">Status</label>
+            <select id="manualStatus" required>
+              <option value="hadir">Hadir</option>
+              <option value="alpha">Alpha</option>
+            </select>
+          </div>
+
+          <div class="form-field" id="manualJamTersediaWrapper">
+            <label style="display:flex; align-items:center; gap: var(--sp-2); font-weight: normal;">
+              <input type="checkbox" id="manualTanpaJam" style="width:auto;">
+              Data jam tidak tersedia
+            </label>
+          </div>
+
+          <div class="form-field" id="manualCheckInWrapper">
+            <label for="manualCheckIn">Jam Masuk</label>
+            <input type="time" id="manualCheckIn">
+          </div>
+
+          <div class="form-field" id="manualCheckOutWrapper">
+            <label for="manualCheckOut">Jam Keluar</label>
+            <input type="time" id="manualCheckOut">
+          </div>
+
+          <div class="form-field" style="align-self: end;">
+            <button type="submit" class="btn btn--primary" id="btnSimpanManual" style="width: 100%;">
+              <svg viewBox="0 0 24 24" fill="none" width="16" height="16" style="margin-right: var(--sp-2);"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Simpan
+            </button>
+          </div>
+        </form>
+      </section>
+
       <!-- Kalender Kehadiran -->
       <section class="panel">
         <div class="panel__header">
