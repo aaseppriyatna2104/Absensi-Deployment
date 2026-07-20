@@ -14,6 +14,14 @@
   let weeklyChartInstance = null;
   let monthlyChartInstance = null;
 
+  // Menyimpan snapshot data terakhir + filter staff yang dipilih di
+  // dropdown, supaya saat admin ganti pilihan di dropdown, grafik
+  // bisa langsung digambar ulang tanpa perlu menunggu snapshot baru.
+  let latestRecords = [];
+  let latestToday = new Date();
+  let selectedStaffFilter = "all";
+  let staffDropdownPopulated = false;
+
   /** Menambahkan angka nol di depan kalau kurang dari 2 digit. @param {number} n @returns {string} */
   function pad(n) { return String(n).padStart(2, "0"); }
 
@@ -124,6 +132,17 @@
     // Hitung alpha: jumlah hari kerja dikali jumlah karyawan dikurangi total hadir
     const totalAlpha = Math.max(0, denominator - totalHadir);
 
+    // Rata-rata Kehadiran/Bulan: rata-rata hari hadir per karyawan
+    // (dibagi jumlah karyawan unik yang punya record bulan ini).
+    const rataKehadiran = uniqueEmployeeCount > 0
+      ? Math.round((totalHadir / uniqueEmployeeCount) * 10) / 10
+      : 0;
+
+    // Rata-rata Jam Kerja/Bulan: rata-rata jam kerja PER HARI HADIR
+    // (bukan dibagi 30 hari, supaya angkanya masuk akal — mewakili
+    // "biasanya kerja berapa jam kalau masuk").
+    const rataJamKerjaDetik = totalHadir > 0 ? totalDetik / totalHadir : 0;
+
     /** Helper kecil: set textContent kalau elemennya ada. @param {string} id @param {string|number} val */
     const setText = (id, val) => {
       const el = document.getElementById(id);
@@ -133,6 +152,8 @@
     setText("dashStatHadir", totalHadir);
     setText("dashStatJamKerja", formatDuration(totalDetik));
     setText("dashStatTelat", totalAlpha);
+    setText("dashStatRataHadir", `${rataKehadiran} hari`);
+    setText("dashStatRataJamKerja", formatDuration(rataJamKerjaDetik));
     setText("dashStatPersentase", `${persentase}%`);
   }
 
@@ -170,7 +191,6 @@
     setText("todayHadir", todayHadir);
     setText("todayTelat", todayAlpha);
     setText("todayJamKerja", formatDuration(todayDetik));
-    setText("todayAlpha", 0);
   }
 
   /**
@@ -182,6 +202,12 @@
   function buildWeeklyChart(records, today) {
     const canvas = document.getElementById("weeklyAttendanceChart");
     if (!canvas || typeof Chart === "undefined") return;
+
+    // Kalau admin pilih staff tertentu di dropdown, grafik cuma
+    // menghitung data staff itu saja (bukan gabungan semua karyawan).
+    const filteredRecords = selectedStaffFilter === "all"
+      ? records
+      : records.filter((r) => r.nama === selectedStaffFilter);
 
     const weekStart = startOfWeek(today);
     const hadirData = [];
@@ -195,7 +221,7 @@
       const isFuture = day > startOfDay(today);
       // Pakai filter() (bukan find()) supaya benar juga untuk admin,
       // yang datanya bisa berisi check-in beberapa karyawan di hari yang sama.
-      const dayRecords = records.filter((r) => sameDate(r.date, day) && r.checkIn);
+      const dayRecords = filteredRecords.filter((r) => sameDate(r.date, day) && r.checkIn);
 
       const hadir = dayRecords.length;
       const alpha = (!isWeekend && !isFuture && dayRecords.length === 0) ? 1 : 0;
@@ -240,6 +266,10 @@
     const canvas = document.getElementById("monthlyAttendanceChart");
     if (!canvas || typeof Chart === "undefined") return;
 
+    const filteredRecords = selectedStaffFilter === "all"
+      ? records
+      : records.filter((r) => r.nama === selectedStaffFilter);
+
     const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
 
     const weekBuckets = [];
@@ -255,7 +285,7 @@
         if (date > startOfDay(today)) continue;
         // filter().length (bukan find()) supaya benar juga untuk admin
         // yang datanya berisi check-in beberapa karyawan per hari.
-        count += records.filter((r) => sameDate(r.date, date) && r.checkIn).length;
+        count += filteredRecords.filter((r) => sameDate(r.date, date) && r.checkIn).length;
       }
       return count;
     });
@@ -404,6 +434,143 @@
     setTimeout(() => waitForChart(callback, attemptsLeft - 1), 250);
   }
 
+  /**
+   * Merender tabel status kehadiran hari ini untuk SELURUH karyawan
+   * (khusus admin). Sumber daftar karyawan dari window.Auth.USERS
+   * (bukan dari collection "attendance", supaya karyawan yang belum
+   * pernah absen hari ini tetap muncul dengan status "Alpha").
+   * @param {Array<object>} records - seluruh record presensi (semua karyawan)
+   * @param {Date} today
+   */
+  function renderEmployeeStatusTable(records, today) {
+    const tbody = document.getElementById("employeeStatusTableBody");
+    if (!tbody) return;
+
+    const staffList = ((window.Auth && window.Auth.USERS) || [])
+      .filter((u) => u.role === "staff");
+
+    const monthStart = startOfMonth(today);
+    const dayEnd = startOfDay(today);
+
+    const rows = staffList.map((user) => {
+      const todayRecord = records.find((r) =>
+        r.nama === user.nama && sameDate(r.date, today) && r.checkIn
+      );
+
+      const monthRecordsForUser = records.filter((r) =>
+        r.nama === user.nama && startOfDay(r.date) >= monthStart && startOfDay(r.date) <= dayEnd
+      );
+      const hadirBulanIni = monthRecordsForUser.filter((r) => r.checkIn).length;
+      const workingDaysSoFar = countWeekdays(monthStart, dayEnd);
+
+      return {
+        nama: user.nama,
+        isHadir: !!todayRecord,
+        jamMasuk: todayRecord && todayRecord.checkIn ? formatClock(todayRecord.checkIn) : "-",
+        jamKeluar: todayRecord && todayRecord.checkOut ? formatClock(todayRecord.checkOut) : (todayRecord ? "Belum checkout" : "-"),
+        jamKerja: todayRecord && todayRecord.checkIn && todayRecord.checkOut ? formatDuration(todayRecord.totalJamKerjaDetik) : "-",
+        hadirBulanIni,
+        workingDaysSoFar,
+      };
+    });
+
+    // Alpha (belum hadir) ditampilkan lebih dulu supaya langsung terlihat admin.
+    rows.sort((a, b) => Number(a.isHadir) - Number(b.isHadir));
+
+    if (rows.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: var(--sp-6) 0;">Belum ada data karyawan.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = rows.map((row) => `
+      <tr>
+        <td>${row.nama}</td>
+        <td>
+          <span class="status-badge ${row.isHadir ? "status-badge--hadir" : "status-badge--alpha"}">
+            ${row.isHadir ? "Hadir" : "Alpha"}
+          </span>
+        </td>
+        <td class="mono">${row.jamMasuk}</td>
+        <td class="mono">${row.jamKeluar}</td>
+        <td class="mono">${row.jamKerja}</td>
+        <td class="mono">${row.hadirBulanIni}/${row.workingDaysSoFar} hari</td>
+        <td>
+          <a href="kelola-kunci-profil.html?cari=${encodeURIComponent(row.nama)}" class="btn btn--secondary" style="text-decoration:none; padding: 4px 10px; font-size: var(--fs-xs);">
+            Lihat Profil
+          </a>
+        </td>
+      </tr>
+    `).join("");
+  }
+
+  /**
+   * Merender ringkasan info sistem: total karyawan aktif, total
+   * record presensi tersimpan, rentang tanggal data, dan kapan
+   * data terakhir diperbarui (khusus admin).
+   * @param {Array<object>} records - seluruh record presensi (semua karyawan)
+   */
+  function renderSystemInfo(records) {
+    const setText = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    const staffCount = ((window.Auth && window.Auth.USERS) || [])
+      .filter((u) => u.role === "staff").length;
+
+    setText("sysInfoTotalKaryawan", staffCount);
+    setText("sysInfoTotalRecord", records.length);
+
+    if (records.length > 0) {
+      const dates = records.map((r) => r.date.getTime());
+      const earliest = new Date(Math.min(...dates));
+      const latest = new Date(Math.max(...dates));
+      setText("sysInfoRentangTanggal", `${formatShortDate(earliest)} - ${formatShortDate(latest)}`);
+    } else {
+      setText("sysInfoRentangTanggal", "-");
+    }
+
+    setText("sysInfoUpdateTerakhir", formatClock(new Date()));
+  }
+
+  /** Memformat Date menjadi jam "HH:MM". @param {Date} date @returns {string} */
+  function formatClock(date) {
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  }
+
+  /** Memformat Date menjadi tanggal singkat "DD/MM/YYYY". @param {Date} date @returns {string} */
+  function formatShortDate(date) {
+    return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+  }
+
+  /**
+   * Mengisi dropdown filter grafik dengan daftar staff (sekali saja),
+   * lalu daftarkan event listener buat gambar ulang grafik begitu
+   * admin ganti pilihan.
+   */
+  function setupChartStaffFilter() {
+    const select = document.getElementById("chartStaffFilter");
+    if (!select || staffDropdownPopulated) return;
+
+    const staffList = ((window.Auth && window.Auth.USERS) || [])
+      .filter((u) => u.role === "staff");
+
+    staffList.forEach((user) => {
+      const option = document.createElement("option");
+      option.value = user.nama;
+      option.textContent = user.nama;
+      select.appendChild(option);
+    });
+
+    select.addEventListener("change", (e) => {
+      selectedStaffFilter = e.target.value;
+      buildWeeklyChart(latestRecords, latestToday);
+      buildMonthlyChart(latestRecords, latestToday);
+    });
+
+    staffDropdownPopulated = true;
+  }
+
   document.addEventListener("DOMContentLoaded", () => {
     const weeklyCanvas = document.getElementById("weeklyAttendanceChart");
     if (!weeklyCanvas) return; // bukan halaman Dashboard
@@ -428,10 +595,20 @@
         const records = snapshot.docs.map((doc) => docToRecord(doc.data()));
         const today = new Date();
 
+        latestRecords = records;
+        latestToday = today;
+
         renderTodayStats(records, today);
         renderStatCards(records, today);
         renderTimeline(records, today);
         renderWeeklySummary(records, today);
+
+        // Untuk admin, render tambahan tabel status karyawan dan info sistem
+        if (isAdmin) {
+          renderEmployeeStatusTable(records, today);
+          renderSystemInfo(records);
+          setupChartStaffFilter();
+        }
 
         // Chart.js kadang belum siap saat snapshot pertama datang
         // (misal koneksi CDN lambat) — tunggu dulu sebelum menggambar.

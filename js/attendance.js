@@ -53,7 +53,31 @@
   function determineStatus(checkInTime) {
     return "hadir";
   }
-  
+
+  /** Mendapatkan lokasi GPS saat ini menggunakan Geolocation API */
+  function getCurrentLocation() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation tidak didukung oleh browser ini"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          });
+        },
+        (error) => {
+          console.error("GPS Error:", error);
+          reject(error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  }
+
   /** ID record untuk hari ini: "{username}_{YYYY-MM-DD}" */
   function getTodayRecordId() {
     return `${CURRENT_EMPLOYEE.id}_${getTodayString()}`;
@@ -148,40 +172,56 @@
   async function handleCheckIn() {
     const btn = document.getElementById("btnCheckIn");
     if (!btn || btn.disabled) return;
-    
-    window.setButtonLoading(btn, true, "Mencatat...");
+
+    window.setButtonLoading(btn, true, "Mencatat lokasi...");
     console.log("Starting check-in process...");
-    
+
     try {
       const now = new Date();
       const todayString = getTodayString();
       const recordId = getTodayRecordId();
       const status = determineStatus(now);
-      
+
+      // Ambil lokasi GPS
+      let locationData = {};
+      try {
+        const location = await getCurrentLocation();
+        locationData = {
+          checkInLat: location.latitude,
+          checkInLong: location.longitude,
+          checkInAccuracy: location.accuracy
+        };
+        console.log("GPS Location captured:", locationData);
+      } catch (gpsError) {
+        console.warn("GPS failed, continuing without location:", gpsError);
+        window.showToast("GPS tidak tersedia, check-in tetap dilanjutkan.", "warning");
+      }
+
       const data = {
         nama: CURRENT_EMPLOYEE.nama,
         tanggal: todayString,
         checkIn: now.toISOString(),
         checkOut: null,
         totalJamKerjaDetik: 0,
-        status: status
+        status: status,
+        ...locationData
       };
-      
+
       console.log("Writing to Firebase:", data);
-      
+
       // Add timeout for Firebase operation
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Timeout - Firebase operation took too long")), 10000);
       });
-      
+
       await Promise.race([
         db.collection("attendance").doc(recordId).set(data, { merge: true }),
         timeoutPromise
       ]);
-      
+
       console.log("Check-in successful");
       window.showToast(`Check-in berhasil! Anda hadir.`, "success");
-      
+
     } catch (error) {
       console.error("Check-in error:", error);
       if (error.message.includes("Timeout")) {
@@ -198,19 +238,19 @@
   async function handleCheckOut() {
     const btn = document.getElementById("btnCheckOut");
     if (!btn || btn.disabled) return;
-    
-    window.setButtonLoading(btn, true, "Mencatat...");
+
+    window.setButtonLoading(btn, true, "Mencatat lokasi...");
     console.log("Starting check-out process...");
-    
+
     try {
       const now = new Date();
-      
+
       // Cek record hari ini dulu
       const todayRecordId = getTodayRecordId();
       const todayDoc = await db.collection("attendance").doc(todayRecordId).get();
-      
+
       let recordId, data;
-      
+
       if (todayDoc.exists && todayDoc.data().checkIn && !todayDoc.data().checkOut) {
         // Ada check-in aktif hari ini
         recordId = todayRecordId;
@@ -222,45 +262,68 @@
           .where("nama", "==", CURRENT_EMPLOYEE.nama)
           .where("checkOut", "==", null)
           .get();
-        
+
         if (snapshot.empty) {
           window.showToast("Data check-in tidak ditemukan.", "error");
           window.setButtonLoading(btn, false);
           return;
         }
-        
+
         // Sort di client-side untuk mencari yang terbaru
         const docs = snapshot.docs;
         docs.sort((a, b) => new Date(b.data().checkIn) - new Date(a.data().checkIn));
-        
+
         const doc = docs[0];
         recordId = doc.id;
         data = doc.data();
       }
-      
+
       const checkInDate = new Date(data.checkIn);
       const totalDetik = Math.floor((now - checkInDate) / 1000);
-      
+
+      // Ambil lokasi GPS untuk check-out
+      let locationData = {};
+      try {
+        const location = await getCurrentLocation();
+        locationData = {
+          checkOutLat: location.latitude,
+          checkOutLong: location.longitude,
+          checkOutAccuracy: location.accuracy
+        };
+        console.log("GPS Location captured for check-out:", locationData);
+      } catch (gpsError) {
+        console.warn("GPS failed for check-out, continuing without location:", gpsError);
+        window.showToast("GPS tidak tersedia, check-out tetap dilanjutkan.", "warning");
+      }
+
       const updateData = {
         checkOut: now.toISOString(),
-        totalJamKerjaDetik: totalDetik
+        totalJamKerjaDetik: totalDetik,
+        ...locationData
       };
-      
+
       console.log("Writing check-out data to Firebase:", updateData);
-      
+
       // Add timeout for Firebase operation
       const timeoutPromise = new Promise((_, reject) => {
         setTimeout(() => reject(new Error("Timeout - Firebase operation took too long")), 10000);
       });
-      
+
       await Promise.race([
         db.collection("attendance").doc(recordId).set(updateData, { merge: true }),
         timeoutPromise
       ]);
-      
+
       console.log("Check-out successful");
       window.showToast(`Check-out berhasil! Total: ${formatDuration(totalDetik)}`, "success");
-      
+
+      // Listener real-time cuma nempel ke dokumen HARI INI. Kalau yang
+      // baru saja di-check-out itu sesi aktif dari hari sebelumnya,
+      // listener itu ga bakal ke-trigger oleh perubahan ini. Refresh
+      // manual di sini supaya tombol & status di layar langsung sesuai,
+      // ga nunggu sampai halaman di-reload.
+      await loadActiveAttendance();
+
     } catch (error) {
       console.error("Check-out error:", error);
       if (error.message.includes("Timeout")) {

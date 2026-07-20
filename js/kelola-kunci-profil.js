@@ -95,17 +95,37 @@
     }
   }
 
-  /** Mengambil seluruh data user dari Firestore lalu render tabel */
+  /**
+   * Mengambil seluruh data user lalu render tabel.
+   *
+   * Sengaja mulai dari daftar akun di `window.Auth.USERS` (auth.js),
+   * BUKAN cuma dari collection Firestore "profiles" — dokumen di
+   * "profiles" baru dibuat begitu user pertama kali submit form
+   * Profil. Kalau langsung baca "profiles" doang, karyawan yang
+   * belum pernah buka halaman Profil sama sekali ga bakal muncul
+   * di sini, padahal dia sudah terdaftar dan seharusnya bisa
+   * di-lock lebih dulu oleh admin.
+   */
   async function loadAllUsers() {
     const tbody = document.getElementById("lockTableBody");
     window.renderTableSkeleton(tbody, 5, 3);
 
     try {
       const snapshot = await db.collection("profiles").get();
-      allUsers = snapshot.docs.map((doc) => ({ 
-        username: doc.id, 
-        ...doc.data() 
-      }));
+      const profilesByUsername = {};
+      snapshot.forEach((doc) => { profilesByUsername[doc.id] = doc.data(); });
+
+      const baseUsers = (window.Auth && window.Auth.USERS) || [];
+      allUsers = baseUsers.map((u) => {
+        const profile = profilesByUsername[u.username];
+        return {
+          username: u.username,
+          nama: (profile && profile.nama) || u.nama,
+          role: (profile && profile.role) || u.role,
+          profileLocked: profile ? !!profile.profileLocked : false,
+        };
+      });
+
       renderTable(document.getElementById("searchInput").value);
     } catch (err) {
       console.error("Gagal memuat data user:", err);
@@ -127,6 +147,15 @@
           Gagal memuat modul penyimpanan (js/firebase-config.js).
         </td></tr>`;
       return;
+    }
+
+    // Dukung link cepat dari tabel Status Karyawan di Dashboard
+    // (index.html?...) yang membawa nama karyawan lewat query
+    // param ?cari=, supaya tabel di sini otomatis terfilter.
+    const cariParam = new URLSearchParams(window.location.search).get("cari");
+    if (cariParam) {
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) searchInput.value = cariParam;
     }
 
     loadAllUsers();

@@ -12,7 +12,7 @@
     "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
     "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
   ];
-  const TABLE_COLUMN_COUNT = 7;
+  const TABLE_COLUMN_COUNT = 9;
 
   /** Menambahkan angka nol di depan kalau kurang dari 2 digit. @param {number} n @returns {string} */
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -81,7 +81,7 @@
    * Mengubah satu record mentah ("tanggal": "YYYY-MM-DD", dst.) dari
    * penyimpanan menjadi objek siap-pakai untuk tabel & statistik.
    * @param {object} data - data mentah dari db.collection("attendance")
-   * @returns {{date: Date, checkIn: Date|null, checkOut: Date|null, totalJamKerjaDetik: number, status: string}}
+   * @returns {{date: Date, checkIn: Date|null, checkOut: Date|null, totalJamKerjaDetik: number, status: string, checkInLat, checkInLong, checkOutLat, checkOutLong}}
    */
   function docToRecord(data) {
     const [y, m, d] = data.tanggal.split("-").map(Number);
@@ -92,6 +92,12 @@
       checkOut: data.checkOut ? new Date(data.checkOut) : null,
       totalJamKerjaDetik: data.totalJamKerjaDetik || 0,
       status: data.status || "belum",
+      checkInLat: data.checkInLat || null,
+      checkInLong: data.checkInLong || null,
+      checkInAccuracy: data.checkInAccuracy || null,
+      checkOutLat: data.checkOutLat || null,
+      checkOutLong: data.checkOutLong || null,
+      checkOutAccuracy: data.checkOutAccuracy || null,
     };
   }
 
@@ -124,7 +130,29 @@
       return;
     }
 
-    tbody.innerHTML = records.map((r) => `
+    /**
+     * Membentuk markup link "Lihat Peta" kalau koordinat GPS ada.
+     * Sengaja pakai `!= null` (bukan truthy check) supaya koordinat
+     * 0 (mis. tepat di garis khatulistiwa/meridian) tetap dianggap
+     * valid, bukan dibaca sebagai "tidak ada data".
+     * @param {number|null} lat
+     * @param {number|null} long
+     * @param {number|null} [accuracy] - radius akurasi GPS dalam meter
+     * @returns {string}
+     */
+    function mapLink(lat, long, accuracy) {
+      if (lat == null || long == null) return "-";
+      const accuracyLabel = (typeof accuracy === "number")
+        ? ` <span style="color: var(--color-text-faint); font-size: var(--fs-xs, 11px);">(±${Math.round(accuracy)}m)</span>`
+        : "";
+      return `<a href="https://maps.google.com/?q=${lat},${long}" target="_blank" style="color: var(--color-teal-600); text-decoration: none;">Lihat Peta</a>${accuracyLabel}`;
+    }
+
+    tbody.innerHTML = records.map((r) => {
+      const checkInLocation = mapLink(r.checkInLat, r.checkInLong, r.checkInAccuracy);
+      const checkOutLocation = mapLink(r.checkOutLat, r.checkOutLong, r.checkOutAccuracy);
+
+      return `
       <tr>
         <td class="mono">${formatDateShort(r.date)}</td>
         <td>${DAY_NAMES[r.date.getDay()]}</td>
@@ -133,7 +161,10 @@
         <td class="cell-time mono">${r.checkOut ? formatClock(r.checkOut) : "—:—"}</td>
         <td class="cell-time mono">${r.checkIn && r.checkOut ? formatDuration(r.totalJamKerjaDetik) : "00:00:00"}</td>
         <td>${statusBadge(r)}</td>
-      </tr>`).join("");
+        <td>${checkInLocation}</td>
+        <td>${checkOutLocation}</td>
+      </tr>`;
+    }).join("");
   }
 
   /**

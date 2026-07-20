@@ -353,13 +353,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // Sembunyikan menu tertentu dari sidebar admin (misal: Riwayat, karena
+  // admin sudah punya akses langsung lewat tombol "Lihat Riwayat" di
+  // kelola-data.html). Sidebar staff tidak terpengaruh — link tetap ada.
+  document.querySelectorAll("[data-menu-hide]").forEach((menuItem) => {
+    const hideForRole = menuItem.getAttribute("data-menu-hide");
+    if (hideForRole === "admin" && isAdmin) {
+      menuItem.style.display = "none";
+    }
+  });
+
   // Redirect staff jika mencoba akses halaman yang tidak boleh
   const currentPath = window.location.pathname;
   const currentPage = currentPath.split("/").pop() || "index.html";
   
   if (!isAdmin) {
-    // Staff hanya boleh akses absensi.html dan profil.html
-    const allowedPages = ["absensi.html", "profil.html", "jadwal.html"];
+    // Staff hanya boleh akses absensi.html, riwayat.html, profil.html,
+    // dan jadwal.html. (riwayat.html ditambahkan supaya konsisten
+    // dengan menu sidebar yang sekarang menampilkan link Riwayat
+    // untuk staff juga — sebelumnya link-nya kelihatan tapi user
+    // langsung dilempar balik ke absensi.html begitu diklik.)
+    const allowedPages = ["absensi.html", "riwayat.html", "profil.html", "jadwal.html"];
     if (!allowedPages.includes(currentPage)) {
       window.location.href = "absensi.html";
     }
